@@ -1,0 +1,30 @@
+name: Release v0.1.0
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.1.0.yml'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested source
+        uses: actions/checkout@v4
+        with:
+          ref: 8fd5974208df73915ae42d8de629c8cdc567be63
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build
+        run: gradle build
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.0
+          name: MiraCosmetics v0.1.0
+          target_commitish: 8fd5974208df73915ae42d8de629c8cdc567be63
+          body: Initial MiraCosmetics release with persistent unlocks/equips, trail, join and kill-effect channels, registry API and admin grants.
+          files: build/libs/MiraCosmetics-0.1.0.jar
