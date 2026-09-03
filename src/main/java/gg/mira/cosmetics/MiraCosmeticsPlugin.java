@@ -1,6 +1,7 @@
 package gg.mira.cosmetics;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.util.*;
 
 public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener {
+    private static final String PREFIX = "&5&lMira &8>> &r";
     private CosmeticService service;
     private final Map<UUID, Long> trailThrottle = new HashMap<>();
 
@@ -36,41 +38,41 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener {
     @Override public void onDisable() { service.save(); getServer().getServicesManager().unregisterAll(this); }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player) && (args.length == 0 || !args[0].equalsIgnoreCase("grant"))) { sender.sendMessage("§cPlayers only."); return true; }
+        if (!(sender instanceof Player player) && (args.length == 0 || !args[0].equalsIgnoreCase("grant"))) { msg(sender, "&cPlayers only."); return true; }
         if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
             Player p = (Player) sender;
-            sender.sendMessage("§6Mira Cosmetics");
-            for (Cosmetic c : service.registry.values()) sender.sendMessage((service.owns(p.getUniqueId(), c.id()) ? "§a" : "§7") + c.id() + " §8- §f" + c.displayName() + " §7(" + c.type() + ")");
+            msg(sender, "&6Mira Cosmetics");
+            for (Cosmetic c : service.registry.values()) msg(sender, (service.owns(p.getUniqueId(), c.id()) ? "&a" : "&7") + c.id() + " &8- &f" + c.displayName() + " &7(" + c.type() + ")");
             return true;
         }
         if (args[0].equalsIgnoreCase("equip")) {
-            if (args.length < 2) { sender.sendMessage("§cUsage: /cosmetics equip <id>"); return true; }
+            if (args.length < 2) { msg(sender, "&cUsage: /cosmetics equip <id>"); return true; }
             Cosmetic c = service.registry.get(args[1].toLowerCase(Locale.ROOT));
-            if (c == null) { sender.sendMessage("§cUnknown cosmetic."); return true; }
+            if (c == null) { msg(sender, "&cUnknown cosmetic."); return true; }
             Player p = (Player) sender;
-            if (!service.owns(p.getUniqueId(), c.id())) { sender.sendMessage("§cYou have not unlocked that cosmetic."); return true; }
+            if (!service.owns(p.getUniqueId(), c.id())) { msg(sender, "&cYou have not unlocked that cosmetic."); return true; }
             service.equip(p.getUniqueId(), c.type(), c.id());
-            sender.sendMessage("§aEquipped " + c.displayName() + ".");
+            msg(sender, "&aEquipped " + c.displayName() + ".");
             return true;
         }
         if (args[0].equalsIgnoreCase("clear")) {
-            if (args.length < 2) { sender.sendMessage("§cUsage: /cosmetics clear <trail|join|kill>"); return true; }
-            try { service.equip(((Player)sender).getUniqueId(), CosmeticType.valueOf(args[1].toUpperCase(Locale.ROOT)), null); sender.sendMessage("§aCosmetic slot cleared."); }
-            catch (IllegalArgumentException ex) { sender.sendMessage("§cUnknown cosmetic type."); }
+            if (args.length < 2) { msg(sender, "&cUsage: /cosmetics clear <trail|join|kill>"); return true; }
+            try { service.equip(((Player)sender).getUniqueId(), CosmeticType.valueOf(args[1].toUpperCase(Locale.ROOT)), null); msg(sender, "&aCosmetic slot cleared."); }
+            catch (IllegalArgumentException ex) { msg(sender, "&cUnknown cosmetic type."); }
             return true;
         }
         if (args[0].equalsIgnoreCase("grant")) {
-            if (!sender.hasPermission("miracosmetics.admin")) { sender.sendMessage("§cNo permission."); return true; }
-            if (args.length < 3) { sender.sendMessage("§cUsage: /cosmetics grant <player> <id>"); return true; }
+            if (!sender.hasPermission("miracosmetics.admin")) { msg(sender, "&cNo permission."); return true; }
+            if (args.length < 3) { msg(sender, "&cUsage: /cosmetics grant <player> <id>"); return true; }
             Player target = Bukkit.getPlayerExact(args[1]);
             Cosmetic c = service.registry.get(args[2].toLowerCase(Locale.ROOT));
-            if (target == null || c == null) { sender.sendMessage("§cPlayer or cosmetic not found."); return true; }
+            if (target == null || c == null) { msg(sender, "&cPlayer or cosmetic not found."); return true; }
             service.grant(target.getUniqueId(), c.id());
-            target.sendMessage("§aUnlocked cosmetic: §f" + c.displayName());
-            sender.sendMessage("§aGranted.");
+            msg(target, "&aUnlocked cosmetic: &f" + c.displayName());
+            msg(sender, "&aGranted.");
             return true;
         }
-        sender.sendMessage("§7/cosmetics list, equip <id>, clear <type>");
+        msg(sender, "&7/cosmetics list, equip <id>, clear <type>");
         return true;
     }
 
@@ -92,6 +94,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener {
         if (killer == null) return;
         service.equipped(killer.getUniqueId(), CosmeticType.KILL).ifPresent(c -> event.getPlayer().getWorld().spawnParticle(c.particle(), event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 0.8, 0.5, 0.03));
     }
+
+    private void msg(CommandSender sender, String raw) { sender.sendMessage(ChatColor.translateAlternateColorCodes('&', PREFIX + raw)); }
 
     public enum CosmeticType { TRAIL, JOIN, KILL }
     public record Cosmetic(String id, CosmeticType type, String displayName, Particle particle) {}
