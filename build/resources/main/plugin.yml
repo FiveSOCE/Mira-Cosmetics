@@ -1,0 +1,12 @@
+name: MiraCosmetics
+version: 0.1.0
+main: gg.mira.cosmetics.MiraCosmeticsPlugin
+api-version: '1.21'
+author: FiveSOCE
+commands:
+  cosmetics:
+    aliases: [cosmetic]
+    description: Manage cosmetics
+permissions:
+  miracosmetics.use: {default: true}
+  miracosmetics.admin: {default: op}
