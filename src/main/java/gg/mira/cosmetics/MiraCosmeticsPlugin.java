@@ -1,10 +1,14 @@
 package gg.mira.cosmetics;
 
+import com.mira.core.api.MiraCore;
+import com.mira.core.api.MiraCoreProvider;
+import com.mira.core.api.ModuleHealth;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -15,97 +19,237 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener {
-    private static final String PREFIX = "&5&lMira &8>> &r";
+public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, TabExecutor {
+    private MiraCore core;
     private CosmeticService service;
     private final Map<UUID, Long> trailThrottle = new HashMap<>();
 
-    @Override public void onEnable() {
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+        core = MiraCoreProvider.require();
         service = new CosmeticService(this);
+
+        registerDefaults();
+
+        getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
+        core.services().register(CosmeticsApi.class, service);
+        core.modules().register(this, "MiraCosmetics");
+        core.modules().setHealth(this, ModuleHealth.HEALTHY,
+                "Player cosmetics plus centralized teleport/fly visual effects ready");
+
+        getServer().getPluginManager().registerEvents(this, this);
+        var command = getCommand("cosmetics");
+        if (command != null) {
+            command.setExecutor(this);
+            command.setTabCompleter(this);
+        }
+
+        getLogger().info("MiraCosmetics v" + getPluginMeta().getVersion() + " enabled with "
+                + service.cosmetics().size() + " registered cosmetic(s).");
+    }
+
+    @Override
+    public void onDisable() {
+        if (service != null) service.save();
+        getServer().getServicesManager().unregisterAll(this);
+        if (core != null) {
+            if (service != null) core.services().unregister(CosmeticsApi.class, service);
+            core.modules().unregister(this);
+        }
+    }
+
+    private void registerDefaults() {
         service.register(new Cosmetic("trail_flame", CosmeticType.TRAIL, "Flame Trail", Particle.FLAME));
         service.register(new Cosmetic("trail_hearts", CosmeticType.TRAIL, "Heart Trail", Particle.HEART));
         service.register(new Cosmetic("join_totem", CosmeticType.JOIN, "Totem Arrival", Particle.TOTEM_OF_UNDYING));
         service.register(new Cosmetic("kill_soul", CosmeticType.KILL, "Soul Kill", Particle.SOUL_FIRE_FLAME));
-        getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
-        getServer().getPluginManager().registerEvents(this, this);
+
+        service.register(new Cosmetic("teleport_portal", CosmeticType.TELEPORT, "Portal Teleport", Particle.PORTAL));
+        service.register(new Cosmetic("teleport_endrod", CosmeticType.TELEPORT, "End Rod Teleport", Particle.END_ROD));
+        service.register(new Cosmetic("teleport_firework", CosmeticType.TELEPORT, "Firework Teleport", Particle.FIREWORK));
+
+        service.register(new Cosmetic("fly_cloud", CosmeticType.FLY, "Cloud Flight", Particle.CLOUD));
+        service.register(new Cosmetic("fly_flame", CosmeticType.FLY, "Flame Flight", Particle.FLAME));
+        service.register(new Cosmetic("fly_endrod", CosmeticType.FLY, "End Rod Flight", Particle.END_ROD));
     }
 
-    @Override public void onDisable() { service.save(); getServer().getServicesManager().unregisterAll(this); }
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
+                             @NotNull String label, @NotNull String[] args) {
+        String action = args.length == 0 ? "list" : args[0].toLowerCase(Locale.ROOT);
 
-    @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player) && (args.length == 0 || !args[0].equalsIgnoreCase("grant"))) { msg(sender, "&cPlayers only."); return true; }
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
-            Player p = (Player) sender;
-            msg(sender, "&6Mira Cosmetics");
-            for (Cosmetic c : service.registry.values()) msg(sender, (service.owns(p.getUniqueId(), c.id()) ? "&a" : "&7") + c.id() + " &8- &f" + c.displayName() + " &7(" + c.type() + ")");
-            return true;
-        }
-        if (args[0].equalsIgnoreCase("equip")) {
-            if (args.length < 2) { msg(sender, "&cUsage: /cosmetics equip <id>"); return true; }
-            Cosmetic c = service.registry.get(args[1].toLowerCase(Locale.ROOT));
-            if (c == null) { msg(sender, "&cUnknown cosmetic."); return true; }
-            Player p = (Player) sender;
-            if (!service.owns(p.getUniqueId(), c.id())) { msg(sender, "&cYou have not unlocked that cosmetic."); return true; }
-            service.equip(p.getUniqueId(), c.type(), c.id());
-            msg(sender, "&aEquipped " + c.displayName() + ".");
-            return true;
-        }
-        if (args[0].equalsIgnoreCase("clear")) {
-            if (args.length < 2) { msg(sender, "&cUsage: /cosmetics clear <trail|join|kill>"); return true; }
-            try { service.equip(((Player)sender).getUniqueId(), CosmeticType.valueOf(args[1].toUpperCase(Locale.ROOT)), null); msg(sender, "&aCosmetic slot cleared."); }
-            catch (IllegalArgumentException ex) { msg(sender, "&cUnknown cosmetic type."); }
-            return true;
-        }
-        if (args[0].equalsIgnoreCase("grant")) {
-            if (!sender.hasPermission("miracosmetics.admin")) { msg(sender, "&cNo permission."); return true; }
-            if (args.length < 3) { msg(sender, "&cUsage: /cosmetics grant <player> <id>"); return true; }
+        if (action.equals("grant") || action.equals("revoke")) {
+            if (!sender.hasPermission("miracosmetics.admin")) {
+                msg(sender, "&cYou do not have permission.");
+                return true;
+            }
+            if (args.length < 3) {
+                msg(sender, "&eUsage: /cosmetics " + action + " <player> <id>");
+                return true;
+            }
             Player target = Bukkit.getPlayerExact(args[1]);
-            Cosmetic c = service.registry.get(args[2].toLowerCase(Locale.ROOT));
-            if (target == null || c == null) { msg(sender, "&cPlayer or cosmetic not found."); return true; }
-            service.grant(target.getUniqueId(), c.id());
-            msg(target, "&aUnlocked cosmetic: &f" + c.displayName());
-            msg(sender, "&aGranted.");
+            Cosmetic cosmetic = service.cosmetic(args[2]).orElse(null);
+            if (target == null || cosmetic == null) {
+                msg(sender, "&cPlayer or cosmetic not found.");
+                return true;
+            }
+            boolean changed = action.equals("grant")
+                    ? service.grant(target.getUniqueId(), cosmetic.id())
+                    : service.revoke(target.getUniqueId(), cosmetic.id());
+            if (changed) {
+                core.audit().record("MiraCosmetics", action.equals("grant") ? "COSMETIC_GRANTED" : "COSMETIC_REVOKED",
+                        sender instanceof Player player ? player.getUniqueId() : null, sender.getName(),
+                        target.getUniqueId().toString(), action,
+                        Map.of("cosmetic", cosmetic.id(), "targetName", target.getName()));
+                msg(sender, "&aCosmetic " + action + " updated for &f" + target.getName() + "&a.");
+                msg(target, action.equals("grant")
+                        ? "&aUnlocked cosmetic: &f" + cosmetic.displayName()
+                        : "&eCosmetic removed: &f" + cosmetic.displayName());
+            } else {
+                msg(sender, "&eNo cosmetic ownership change was required.");
+            }
             return true;
         }
-        msg(sender, "&7/cosmetics list, equip <id>, clear <type>");
+
+        if (!(sender instanceof Player player)) {
+            msg(sender, "&cPlayers only for this cosmetics action.");
+            return true;
+        }
+        if (!sender.hasPermission("miracosmetics.use")) {
+            msg(sender, "&cYou do not have permission.");
+            return true;
+        }
+
+        switch (action) {
+            case "list" -> {
+                msg(sender, "&6Mira Cosmetics");
+                for (Cosmetic cosmetic : service.cosmetics()) {
+                    boolean defaultEffect = service.isDefault(cosmetic);
+                    boolean owned = service.owns(player.getUniqueId(), cosmetic.id());
+                    String state = owned ? "&a" : defaultEffect ? "&e" : "&7";
+                    msg(sender, state + cosmetic.id() + " &8- &f" + cosmetic.displayName()
+                            + " &7(" + cosmetic.type() + ")" + (defaultEffect ? " &8[DEFAULT]" : ""));
+                }
+            }
+            case "equip" -> {
+                if (args.length < 2) {
+                    msg(sender, "&eUsage: /cosmetics equip <id>");
+                    return true;
+                }
+                Cosmetic cosmetic = service.cosmetic(args[1]).orElse(null);
+                if (cosmetic == null) {
+                    msg(sender, "&cUnknown cosmetic.");
+                    return true;
+                }
+                if (!service.owns(player.getUniqueId(), cosmetic.id()) && !service.isDefault(cosmetic)) {
+                    msg(sender, "&cYou have not unlocked that cosmetic.");
+                    return true;
+                }
+                service.equip(player.getUniqueId(), cosmetic.type(), cosmetic.id());
+                msg(sender, "&aEquipped &f" + cosmetic.displayName() + "&a for &f" + cosmetic.type().name().toLowerCase(Locale.ROOT) + "&a.");
+            }
+            case "clear" -> {
+                if (args.length < 2) {
+                    msg(sender, "&eUsage: /cosmetics clear <trail|join|kill|teleport|fly>");
+                    return true;
+                }
+                try {
+                    CosmeticType type = CosmeticType.valueOf(args[1].toUpperCase(Locale.ROOT));
+                    service.equip(player.getUniqueId(), type, null);
+                    msg(sender, "&aCosmetic slot cleared. &7Default effect will be used when configured.");
+                } catch (IllegalArgumentException ex) {
+                    msg(sender, "&cUnknown cosmetic type.");
+                }
+            }
+            case "status" -> {
+                msg(sender, "&6Cosmetic Status");
+                for (CosmeticType type : CosmeticType.values()) {
+                    Cosmetic cosmetic = service.effective(player.getUniqueId(), type).orElse(null);
+                    msg(sender, "&7" + type + ": &f" + (cosmetic == null ? "None" : cosmetic.displayName()));
+                }
+            }
+            default -> msg(sender, "&7/cosmetics <list|equip|clear|status>");
+        }
         return true;
     }
 
-    @EventHandler public void onMove(PlayerMoveEvent event) {
-        Player p = event.getPlayer();
+    @EventHandler
+    public void onMove(PlayerMoveEvent event) {
+        if (!getConfig().getBoolean("effects.trail.enabled", true)) return;
+        Player player = event.getPlayer();
         if (event.getTo() == null || event.getFrom().distanceSquared(event.getTo()) == 0) return;
         long now = System.currentTimeMillis();
-        if (now - trailThrottle.getOrDefault(p.getUniqueId(), 0L) < 250L) return;
-        trailThrottle.put(p.getUniqueId(), now);
-        service.equipped(p.getUniqueId(), CosmeticType.TRAIL).ifPresent(c -> p.getWorld().spawnParticle(c.particle(), p.getLocation().add(0, 0.1, 0), 2, 0.15, 0.05, 0.15, 0));
+        long throttle = Math.max(50L, getConfig().getLong("effects.trail.throttle-millis", 250L));
+        if (now - trailThrottle.getOrDefault(player.getUniqueId(), 0L) < throttle) return;
+        trailThrottle.put(player.getUniqueId(), now);
+        service.equipped(player.getUniqueId(), CosmeticType.TRAIL).ifPresent(cosmetic ->
+                player.getWorld().spawnParticle(cosmetic.particle(), player.getLocation().add(0, 0.1, 0),
+                        2, 0.15, 0.05, 0.15, 0));
     }
 
-    @EventHandler public void onJoin(PlayerJoinEvent event) {
-        service.equipped(event.getPlayer().getUniqueId(), CosmeticType.JOIN).ifPresent(c -> event.getPlayer().getWorld().spawnParticle(c.particle(), event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.05));
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        if (!getConfig().getBoolean("effects.join.enabled", true)) return;
+        service.equipped(event.getPlayer().getUniqueId(), CosmeticType.JOIN).ifPresent(cosmetic ->
+                event.getPlayer().getWorld().spawnParticle(cosmetic.particle(),
+                        event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.05));
     }
 
-    @EventHandler public void onDeath(PlayerDeathEvent event) {
+    @EventHandler
+    public void onDeath(PlayerDeathEvent event) {
+        if (!getConfig().getBoolean("effects.kill.enabled", true)) return;
         Player killer = event.getPlayer().getKiller();
         if (killer == null) return;
-        service.equipped(killer.getUniqueId(), CosmeticType.KILL).ifPresent(c -> event.getPlayer().getWorld().spawnParticle(c.particle(), event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 0.8, 0.5, 0.03));
+        service.equipped(killer.getUniqueId(), CosmeticType.KILL).ifPresent(cosmetic ->
+                event.getPlayer().getWorld().spawnParticle(cosmetic.particle(),
+                        event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 0.8, 0.5, 0.03));
     }
 
-    private void msg(CommandSender sender, String raw) { sender.sendMessage(ChatColor.translateAlternateColorCodes('&', PREFIX + raw)); }
+    private void msg(CommandSender sender, String raw) { core.messages().send(sender, raw); }
 
-    public enum CosmeticType { TRAIL, JOIN, KILL }
-    public record Cosmetic(String id, CosmeticType type, String displayName, Particle particle) {}
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                      @NotNull String alias, @NotNull String[] args) {
+        if (args.length == 1) {
+            List<String> values = new ArrayList<>(List.of("list", "equip", "clear", "status"));
+            if (sender.hasPermission("miracosmetics.admin")) values.addAll(List.of("grant", "revoke"));
+            return complete(args[0], values);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("equip")) return complete(args[1], service.cosmetics().stream().map(Cosmetic::id).toList());
+        if (args.length == 2 && args[0].equalsIgnoreCase("clear")) return complete(args[1], Arrays.stream(CosmeticType.values()).map(type -> type.name().toLowerCase(Locale.ROOT)).toList());
+        if (args.length == 2 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) return complete(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+        if (args.length == 3 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) return complete(args[2], service.cosmetics().stream().map(Cosmetic::id).toList());
+        return List.of();
+    }
+
+    private static List<String> complete(String prefix, Collection<String> values) {
+        String lower = prefix.toLowerCase(Locale.ROOT);
+        return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(lower)).distinct().sorted().toList();
+    }
+
+    public enum CosmeticType { TRAIL, JOIN, KILL, TELEPORT, FLY }
+
+    public record Cosmetic(String id, CosmeticType type, String displayName, Particle particle) { }
 
     public interface CosmeticsApi {
         void register(Cosmetic cosmetic);
+        Optional<Cosmetic> cosmetic(String id);
         boolean grant(UUID player, String cosmeticId);
+        boolean revoke(UUID player, String cosmeticId);
         boolean owns(UUID player, String cosmeticId);
+        boolean equip(UUID player, CosmeticType type, String cosmeticId);
         Optional<Cosmetic> equipped(UUID player, CosmeticType type);
+        Optional<Cosmetic> effective(UUID player, CosmeticType type);
         Collection<Cosmetic> cosmetics();
+        void playTeleport(Player player, Location origin, Location destination);
+        void playFly(Player player);
     }
 
     public static final class CosmeticService implements CosmeticsApi {
@@ -114,36 +258,160 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener {
         private final Map<String, Cosmetic> registry = new LinkedHashMap<>();
         private final Map<UUID, Set<String>> owned = new HashMap<>();
         private final Map<UUID, EnumMap<CosmeticType, String>> equipped = new HashMap<>();
+        private final Map<UUID, Long> flyThrottle = new HashMap<>();
 
-        CosmeticService(MiraCosmeticsPlugin plugin) { this.plugin = plugin; this.file = new File(plugin.getDataFolder(), "cosmetics.yml"); load(); }
-        @Override public void register(Cosmetic c) { registry.put(c.id().toLowerCase(Locale.ROOT), c); }
-        @Override public boolean grant(UUID player, String id) { if (!registry.containsKey(id.toLowerCase(Locale.ROOT))) return false; boolean changed = owned.computeIfAbsent(player, k -> new HashSet<>()).add(id.toLowerCase(Locale.ROOT)); if (changed) save(); return changed; }
-        @Override public boolean owns(UUID player, String id) { return owned.getOrDefault(player, Set.of()).contains(id.toLowerCase(Locale.ROOT)); }
-        void equip(UUID player, CosmeticType type, String id) { EnumMap<CosmeticType, String> map = equipped.computeIfAbsent(player, k -> new EnumMap<>(CosmeticType.class)); if (id == null) map.remove(type); else map.put(type, id.toLowerCase(Locale.ROOT)); save(); }
-        @Override public Optional<Cosmetic> equipped(UUID player, CosmeticType type) { String id = equipped.getOrDefault(player, new EnumMap<>(CosmeticType.class)).get(type); return Optional.ofNullable(id == null ? null : registry.get(id)); }
-        @Override public Collection<Cosmetic> cosmetics() { return List.copyOf(registry.values()); }
+        CosmeticService(MiraCosmeticsPlugin plugin) {
+            this.plugin = plugin;
+            this.file = new File(plugin.getDataFolder(), "cosmetics.yml");
+            load();
+        }
 
-        void load() {
-            plugin.getDataFolder().mkdirs(); YamlConfiguration y = YamlConfiguration.loadConfiguration(file);
-            ConfigurationSection players = y.getConfigurationSection("players"); if (players == null) return;
+        @Override
+        public synchronized void register(Cosmetic cosmetic) {
+            if (cosmetic == null || cosmetic.id() == null || cosmetic.id().isBlank()) return;
+            registry.put(cosmetic.id().toLowerCase(Locale.ROOT), cosmetic);
+        }
+
+        @Override
+        public Optional<Cosmetic> cosmetic(String id) {
+            if (id == null) return Optional.empty();
+            return Optional.ofNullable(registry.get(id.toLowerCase(Locale.ROOT)));
+        }
+
+        @Override
+        public synchronized boolean grant(UUID player, String id) {
+            Cosmetic cosmetic = cosmetic(id).orElse(null);
+            if (cosmetic == null) return false;
+            boolean changed = owned.computeIfAbsent(player, ignored -> new HashSet<>()).add(cosmetic.id().toLowerCase(Locale.ROOT));
+            if (changed) save();
+            return changed;
+        }
+
+        @Override
+        public synchronized boolean revoke(UUID player, String id) {
+            if (id == null) return false;
+            String key = id.toLowerCase(Locale.ROOT);
+            boolean changed = owned.getOrDefault(player, Set.of()).remove(key);
+            EnumMap<CosmeticType, String> slots = equipped.get(player);
+            if (slots != null) slots.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(key));
+            if (changed) save();
+            return changed;
+        }
+
+        @Override
+        public boolean owns(UUID player, String id) {
+            return id != null && owned.getOrDefault(player, Set.of()).contains(id.toLowerCase(Locale.ROOT));
+        }
+
+        @Override
+        public synchronized boolean equip(UUID player, CosmeticType type, String id) {
+            EnumMap<CosmeticType, String> slots = equipped.computeIfAbsent(player, ignored -> new EnumMap<>(CosmeticType.class));
+            if (id == null || id.isBlank()) {
+                slots.remove(type);
+                save();
+                return true;
+            }
+            Cosmetic cosmetic = cosmetic(id).orElse(null);
+            if (cosmetic == null || cosmetic.type() != type) return false;
+            if (!owns(player, cosmetic.id()) && !isDefault(cosmetic)) return false;
+            slots.put(type, cosmetic.id().toLowerCase(Locale.ROOT));
+            save();
+            return true;
+        }
+
+        @Override
+        public Optional<Cosmetic> equipped(UUID player, CosmeticType type) {
+            EnumMap<CosmeticType, String> slots = equipped.get(player);
+            String id = slots == null ? null : slots.get(type);
+            return cosmetic(id);
+        }
+
+        @Override
+        public Optional<Cosmetic> effective(UUID player, CosmeticType type) {
+            Optional<Cosmetic> selected = equipped(player, type);
+            if (selected.isPresent()) return selected;
+            String defaultId = switch (type) {
+                case TELEPORT -> plugin.getConfig().getString("effects.teleport.default-cosmetic", "teleport_portal");
+                case FLY -> plugin.getConfig().getString("effects.fly.default-cosmetic", "fly_cloud");
+                default -> null;
+            };
+            return cosmetic(defaultId);
+        }
+
+        boolean isDefault(Cosmetic cosmetic) {
+            if (cosmetic == null) return false;
+            return effective(null, cosmetic.type()).map(value -> value.id().equalsIgnoreCase(cosmetic.id())).orElse(false);
+        }
+
+        @Override
+        public Collection<Cosmetic> cosmetics() { return List.copyOf(registry.values()); }
+
+        @Override
+        public void playTeleport(Player player, Location origin, Location destination) {
+            if (player == null || !plugin.getConfig().getBoolean("effects.teleport.enabled", true)) return;
+            Cosmetic cosmetic = effective(player.getUniqueId(), CosmeticType.TELEPORT).orElse(null);
+            if (cosmetic == null) return;
+            if (origin != null && origin.getWorld() != null) {
+                origin.getWorld().spawnParticle(cosmetic.particle(), origin.clone().add(0, 1, 0),
+                        Math.max(1, plugin.getConfig().getInt("effects.teleport.count-origin", 24)),
+                        0.45, 0.8, 0.45, 0.04);
+            }
+            if (destination != null && destination.getWorld() != null) {
+                destination.getWorld().spawnParticle(cosmetic.particle(), destination.clone().add(0, 1, 0),
+                        Math.max(1, plugin.getConfig().getInt("effects.teleport.count-destination", 32)),
+                        0.45, 0.8, 0.45, 0.04);
+            }
+        }
+
+        @Override
+        public void playFly(Player player) {
+            if (player == null || !plugin.getConfig().getBoolean("effects.fly.enabled", true) || !player.isFlying()) return;
+            long now = System.currentTimeMillis();
+            long throttle = Math.max(50L, plugin.getConfig().getLong("effects.fly.throttle-millis", 250L));
+            if (now - flyThrottle.getOrDefault(player.getUniqueId(), 0L) < throttle) return;
+            flyThrottle.put(player.getUniqueId(), now);
+            Cosmetic cosmetic = effective(player.getUniqueId(), CosmeticType.FLY).orElse(null);
+            if (cosmetic == null) return;
+            player.getWorld().spawnParticle(cosmetic.particle(), player.getLocation().add(0, 0.1, 0),
+                    Math.max(1, plugin.getConfig().getInt("effects.fly.count", 2)),
+                    0.22, 0.08, 0.22, 0.01);
+        }
+
+        private void load() {
+            plugin.getDataFolder().mkdirs();
+            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+            ConfigurationSection players = yaml.getConfigurationSection("players");
+            if (players == null) return;
             for (String uuidText : players.getKeys(false)) {
                 try {
                     UUID id = UUID.fromString(uuidText);
                     owned.put(id, new HashSet<>(players.getStringList(uuidText + ".owned")));
-                    EnumMap<CosmeticType,String> map = new EnumMap<>(CosmeticType.class);
-                    for (CosmeticType type : CosmeticType.values()) { String value = players.getString(uuidText + ".equipped." + type.name().toLowerCase(Locale.ROOT)); if (value != null) map.put(type, value); }
-                    equipped.put(id, map);
-                } catch (IllegalArgumentException ignored) {}
+                    EnumMap<CosmeticType, String> slots = new EnumMap<>(CosmeticType.class);
+                    for (CosmeticType type : CosmeticType.values()) {
+                        String value = players.getString(uuidText + ".equipped." + type.name().toLowerCase(Locale.ROOT));
+                        if (value != null && !value.isBlank()) slots.put(type, value.toLowerCase(Locale.ROOT));
+                    }
+                    equipped.put(id, slots);
+                } catch (IllegalArgumentException ignored) { }
             }
         }
 
         synchronized void save() {
-            YamlConfiguration y = new YamlConfiguration();
-            for (UUID id : owned.keySet()) {
-                y.set("players." + id + ".owned", new ArrayList<>(owned.get(id)));
-                EnumMap<CosmeticType,String> map = equipped.get(id); if (map != null) for (var e : map.entrySet()) y.set("players." + id + ".equipped." + e.getKey().name().toLowerCase(Locale.ROOT), e.getValue());
+            YamlConfiguration yaml = new YamlConfiguration();
+            Set<UUID> players = new HashSet<>();
+            players.addAll(owned.keySet());
+            players.addAll(equipped.keySet());
+            for (UUID id : players) {
+                yaml.set("players." + id + ".owned", new ArrayList<>(owned.getOrDefault(id, Set.of())));
+                EnumMap<CosmeticType, String> slots = equipped.get(id);
+                if (slots != null) {
+                    for (Map.Entry<CosmeticType, String> entry : slots.entrySet()) {
+                        yaml.set("players." + id + ".equipped." + entry.getKey().name().toLowerCase(Locale.ROOT), entry.getValue());
+                    }
+                }
             }
-            try { y.save(file); } catch (IOException ex) { plugin.getLogger().severe("Could not save cosmetics.yml: " + ex.getMessage()); }
+            try { yaml.save(file); }
+            catch (IOException ex) { plugin.getLogger().severe("Could not save cosmetics.yml: " + ex.getMessage()); }
         }
     }
 }
