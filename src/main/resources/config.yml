@@ -1,0 +1,21 @@
+effects:
+  teleport:
+    enabled: true
+    default-cosmetic: teleport_portal
+    count-origin: 24
+    count-destination: 32
+  fly:
+    enabled: true
+    default-cosmetic: fly_cloud
+    throttle-millis: 250
+    count: 2
+  trail:
+    enabled: true
+    throttle-millis: 250
+  join:
+    enabled: true
+  kill:
+    enabled: true
+
+messages:
+  prefix: '&5&lMira &8>> &r'
