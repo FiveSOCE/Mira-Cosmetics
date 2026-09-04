@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +36,6 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         saveDefaultConfig();
         core = MiraCoreProvider.require();
         service = new CosmeticService(this);
-
         registerDefaults();
 
         getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
@@ -153,7 +153,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                     return true;
                 }
                 service.equip(player.getUniqueId(), cosmetic.type(), cosmetic.id());
-                msg(sender, "&aEquipped &f" + cosmetic.displayName() + "&a for &f" + cosmetic.type().name().toLowerCase(Locale.ROOT) + "&a.");
+                msg(sender, "&aEquipped &f" + cosmetic.displayName() + "&a for &f"
+                        + cosmetic.type().name().toLowerCase(Locale.ROOT) + "&a.");
             }
             case "clear" -> {
                 if (args.length < 2) {
@@ -178,6 +179,15 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             default -> msg(sender, "&7/cosmetics <list|equip|clear|status>");
         }
         return true;
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) {
+        if (event.getTo() == null) return;
+        Location from = event.getFrom().clone();
+        Location to = event.getTo().clone();
+        if (from.getWorld().equals(to.getWorld()) && from.distanceSquared(to) < 0.01D) return;
+        service.playTeleport(event.getPlayer(), from, to);
     }
 
     @EventHandler
@@ -222,16 +232,26 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             if (sender.hasPermission("miracosmetics.admin")) values.addAll(List.of("grant", "revoke"));
             return complete(args[0], values);
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("equip")) return complete(args[1], service.cosmetics().stream().map(Cosmetic::id).toList());
-        if (args.length == 2 && args[0].equalsIgnoreCase("clear")) return complete(args[1], Arrays.stream(CosmeticType.values()).map(type -> type.name().toLowerCase(Locale.ROOT)).toList());
-        if (args.length == 2 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) return complete(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
-        if (args.length == 3 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) return complete(args[2], service.cosmetics().stream().map(Cosmetic::id).toList());
+        if (args.length == 2 && args[0].equalsIgnoreCase("equip")) {
+            return complete(args[1], service.cosmetics().stream().map(Cosmetic::id).toList());
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("clear")) {
+            return complete(args[1], Arrays.stream(CosmeticType.values())
+                    .map(type -> type.name().toLowerCase(Locale.ROOT)).toList());
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) {
+            return complete(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("grant") || args[0].equalsIgnoreCase("revoke"))) {
+            return complete(args[2], service.cosmetics().stream().map(Cosmetic::id).toList());
+        }
         return List.of();
     }
 
     private static List<String> complete(String prefix, Collection<String> values) {
         String lower = prefix.toLowerCase(Locale.ROOT);
-        return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(lower)).distinct().sorted().toList();
+        return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(lower))
+                .distinct().sorted().toList();
     }
 
     public enum CosmeticType { TRAIL, JOIN, KILL, TELEPORT, FLY }
@@ -282,7 +302,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         public synchronized boolean grant(UUID player, String id) {
             Cosmetic cosmetic = cosmetic(id).orElse(null);
             if (cosmetic == null) return false;
-            boolean changed = owned.computeIfAbsent(player, ignored -> new HashSet<>()).add(cosmetic.id().toLowerCase(Locale.ROOT));
+            boolean changed = owned.computeIfAbsent(player, ignored -> new HashSet<>())
+                    .add(cosmetic.id().toLowerCase(Locale.ROOT));
             if (changed) save();
             return changed;
         }
@@ -291,11 +312,12 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         public synchronized boolean revoke(UUID player, String id) {
             if (id == null) return false;
             String key = id.toLowerCase(Locale.ROOT);
-            boolean changed = owned.getOrDefault(player, Set.of()).remove(key);
+            Set<String> playerOwned = owned.get(player);
+            boolean ownershipChanged = playerOwned != null && playerOwned.remove(key);
             EnumMap<CosmeticType, String> slots = equipped.get(player);
-            if (slots != null) slots.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(key));
-            if (changed) save();
-            return changed;
+            boolean slotChanged = slots != null && slots.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(key));
+            if (ownershipChanged || slotChanged) save();
+            return ownershipChanged || slotChanged;
         }
 
         @Override
@@ -305,7 +327,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
 
         @Override
         public synchronized boolean equip(UUID player, CosmeticType type, String id) {
-            EnumMap<CosmeticType, String> slots = equipped.computeIfAbsent(player, ignored -> new EnumMap<>(CosmeticType.class));
+            EnumMap<CosmeticType, String> slots = equipped.computeIfAbsent(player,
+                    ignored -> new EnumMap<>(CosmeticType.class));
             if (id == null || id.isBlank()) {
                 slots.remove(type);
                 save();
@@ -340,7 +363,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
 
         boolean isDefault(Cosmetic cosmetic) {
             if (cosmetic == null) return false;
-            return effective(null, cosmetic.type()).map(value -> value.id().equalsIgnoreCase(cosmetic.id())).orElse(false);
+            return effective(null, cosmetic.type())
+                    .map(value -> value.id().equalsIgnoreCase(cosmetic.id())).orElse(false);
         }
 
         @Override
@@ -388,7 +412,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                     owned.put(id, new HashSet<>(players.getStringList(uuidText + ".owned")));
                     EnumMap<CosmeticType, String> slots = new EnumMap<>(CosmeticType.class);
                     for (CosmeticType type : CosmeticType.values()) {
-                        String value = players.getString(uuidText + ".equipped." + type.name().toLowerCase(Locale.ROOT));
+                        String value = players.getString(uuidText + ".equipped."
+                                + type.name().toLowerCase(Locale.ROOT));
                         if (value != null && !value.isBlank()) slots.put(type, value.toLowerCase(Locale.ROOT));
                     }
                     equipped.put(id, slots);
@@ -406,7 +431,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                 EnumMap<CosmeticType, String> slots = equipped.get(id);
                 if (slots != null) {
                     for (Map.Entry<CosmeticType, String> entry : slots.entrySet()) {
-                        yaml.set("players." + id + ".equipped." + entry.getKey().name().toLowerCase(Locale.ROOT), entry.getValue());
+                        yaml.set("players." + id + ".equipped."
+                                + entry.getKey().name().toLowerCase(Locale.ROOT), entry.getValue());
                     }
                 }
             }
