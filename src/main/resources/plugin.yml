@@ -1,12 +1,16 @@
 name: MiraCosmetics
-version: 0.1.0
+version: 0.1.1
 main: gg.mira.cosmetics.MiraCosmeticsPlugin
 api-version: '1.21'
 author: FiveSOCE
+description: Player cosmetics and centralized visual effects for the Mira ecosystem.
+depend: [MiraCore]
+softdepend: [MiraFly, MiraHomes, MiraWarps, MiraRTP]
 commands:
   cosmetics:
     aliases: [cosmetic]
     description: Manage cosmetics
+    usage: /cosmetics <list|equip|clear|grant|revoke|status>
 permissions:
   miracosmetics.use: {default: true}
   miracosmetics.admin: {default: op}
