@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.8**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.8/MiraCosmetics-0.1.8.jar)
+[**Download MiraCosmetics v0.1.9**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.9/MiraCosmetics-0.1.9.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -176,3 +176,10 @@ New presentation entry points separate visual-only, player-audio, nearby-audio a
 Bounty audio now includes separate `bounty_placed` and `bounty_received` events, and large bounty claims use the End Portal activation sound.
 
 Server-wide audio is played at each listener's own location so players hear global events reliably across different worlds.
+
+
+## Sound Resolver & Flight Trail Hotfix (0.1.9)
+
+MiraCosmetics now resolves Bukkit-style sound constants such as `BLOCK_NOTE_BLOCK_PLING`, `ENTITY_EXPERIENCE_ORB_PICKUP` and `ENTITY_ENDERMAN_TELEPORT` directly before falling back to explicit registry keys. This fixes the previous underscore-to-dot conversion bug that produced `Unknown configured sound` warnings and caused configured sounds to fail.
+
+The default flight effect is also substantially stronger: denser white dust, larger particle size, wider spread, faster refresh and a slight offset behind the flying player so it reads as a visible trail rather than sparse particles around the feet.
