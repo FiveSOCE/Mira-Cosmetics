@@ -4,6 +4,7 @@ import com.mira.core.api.MiraCore;
 import com.mira.core.api.MiraCoreProvider;
 import com.mira.core.api.ModuleHealth;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
@@ -373,17 +374,30 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         @Override
         public void playTeleport(Player player, Location origin, Location destination) {
             if (player == null || !plugin.getConfig().getBoolean("effects.teleport.enabled", true)) return;
-            Cosmetic cosmetic = effective(player.getUniqueId(), CosmeticType.TELEPORT).orElse(null);
-            if (cosmetic == null) return;
-            if (origin != null && origin.getWorld() != null) {
-                origin.getWorld().spawnParticle(cosmetic.particle(), origin.clone().add(0, 1, 0),
-                        Math.max(1, plugin.getConfig().getInt("effects.teleport.count-origin", 24)),
-                        0.45, 0.8, 0.45, 0.04);
-            }
-            if (destination != null && destination.getWorld() != null) {
-                destination.getWorld().spawnParticle(cosmetic.particle(), destination.clone().add(0, 1, 0),
-                        Math.max(1, plugin.getConfig().getInt("effects.teleport.count-destination", 32)),
-                        0.45, 0.8, 0.45, 0.04);
+            renderTeleportRings(origin);
+            renderTeleportRings(destination);
+        }
+
+        private void renderTeleportRings(Location center) {
+            if (center == null || center.getWorld() == null) return;
+            int points = Math.max(12, plugin.getConfig().getInt("effects.teleport.ring-points", 36));
+            double radius = Math.max(0.25D, plugin.getConfig().getDouble("effects.teleport.ring-radius", 1.0D));
+            double spacing = Math.max(0.15D, plugin.getConfig().getDouble("effects.teleport.ring-spacing", 0.55D));
+            double baseY = plugin.getConfig().getDouble("effects.teleport.base-y-offset", 0.15D);
+
+            Particle.DustOptions blue = new Particle.DustOptions(Color.fromRGB(70, 150, 255), 1.0F);
+            Particle.DustOptions white = new Particle.DustOptions(Color.WHITE, 1.0F);
+            Particle.DustOptions[] colors = {blue, white, blue};
+
+            for (int ring = 0; ring < 3; ring++) {
+                double y = center.getY() + baseY + ring * spacing;
+                for (int i = 0; i < points; i++) {
+                    double angle = (Math.PI * 2D * i) / points;
+                    double x = center.getX() + Math.cos(angle) * radius;
+                    double z = center.getZ() + Math.sin(angle) * radius;
+                    center.getWorld().spawnParticle(Particle.DUST, x, y, z, 1,
+                            0D, 0D, 0D, 0D, colors[ring]);
+                }
             }
         }
 
@@ -391,14 +405,17 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         public void playFly(Player player) {
             if (player == null || !plugin.getConfig().getBoolean("effects.fly.enabled", true) || !player.isFlying()) return;
             long now = System.currentTimeMillis();
-            long throttle = Math.max(50L, plugin.getConfig().getLong("effects.fly.throttle-millis", 250L));
+            long throttle = Math.max(50L, plugin.getConfig().getLong("effects.fly.throttle-millis", 100L));
             if (now - flyThrottle.getOrDefault(player.getUniqueId(), 0L) < throttle) return;
             flyThrottle.put(player.getUniqueId(), now);
-            Cosmetic cosmetic = effective(player.getUniqueId(), CosmeticType.FLY).orElse(null);
-            if (cosmetic == null) return;
-            player.getWorld().spawnParticle(cosmetic.particle(), player.getLocation().add(0, 0.1, 0),
+
+            Location feet = player.getLocation().clone().add(0D,
+                    plugin.getConfig().getDouble("effects.fly.y-offset", -0.15D), 0D);
+            Particle.DustOptions white = new Particle.DustOptions(Color.WHITE,
+                    (float) Math.max(0.5D, plugin.getConfig().getDouble("effects.fly.dust-size", 0.8D)));
+            player.getWorld().spawnParticle(Particle.DUST, feet,
                     Math.max(1, plugin.getConfig().getInt("effects.fly.count", 2)),
-                    0.22, 0.08, 0.22, 0.01);
+                    0.12, 0.03, 0.12, 0D, white);
         }
 
         private void load() {
