@@ -12,10 +12,13 @@ effects:
   fly:
     enabled: true
     default-cosmetic: fly_white
-    throttle-millis: 100
-    count: 2
-    y-offset: -0.15
-    dust-size: 0.8
+    throttle-millis: 75
+    count: 8
+    y-offset: -0.10
+    behind-distance: 0.45
+    spread-horizontal: 0.28
+    spread-vertical: 0.10
+    dust-size: 1.35
   trail:
     enabled: true
     throttle-millis: 250
