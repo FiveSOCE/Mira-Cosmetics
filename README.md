@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.10**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.10/MiraCosmetics-0.1.10.jar)
+[**Download MiraCosmetics v0.1.11**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.11/MiraCosmetics-0.1.11.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -188,3 +188,10 @@ The default flight effect is also substantially stronger: denser white dust, lar
 ## CS2-Style Crate Spin Audio (0.1.10)
 
 Adds `crate_spin_tick`, a short `BLOCK_NOTE_BLOCK_HAT` mechanical click at low volume and raised pitch. MiraCrates triggers it on every reel movement, so the sound stays locked to the visual case animation. Reward rarity sounds still play only when the reel lands.
+
+
+## Crate Spin Tick Hotfix (0.1.11)
+
+The original synchronized crate tick used `BLOCK_NOTE_BLOCK_HAT` at very low volume. It was technically valid, so it produced no console warning, but it was too subtle to hear reliably in normal gameplay.
+
+The default is now `UI_BUTTON_CLICK` at volume `0.65` and pitch `1.65`. Existing installations are migrated only when their crate spin sound is still exactly the untouched old default, so administrator-customized sound settings are preserved.
