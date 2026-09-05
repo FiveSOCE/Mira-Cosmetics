@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.3**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.3/MiraCosmetics-0.1.3.jar)
+[**Download MiraCosmetics v0.1.4**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.4/MiraCosmetics-0.1.4.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -32,7 +32,7 @@ Built-in channels are:
 
 Built-in examples include flame/heart trails, a totem join effect and a soul-fire kill effect. TELEPORT and FLY are now canonical Mira signatures rather than selectable particle variants.
 
-v0.1.3 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
+v0.1.4 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
 
 MiraFly can use the public `CosmeticsApi.playFly(Player)` method for continuous flight effects. MiraCosmetics owns throttling and effect selection, so MiraFly does not need to know which particle a player selected.
 
@@ -156,3 +156,8 @@ Teleport effects now include both warmup and completion phases.
 - only fires from the real successful Bukkit/Paper teleport event
 
 Visual and audio channels respect the player's GUI toggles independently.
+
+
+## MiraCosmetics Integration (0.1.4)
+
+Adds independent persistent Visual/Audio GUI toggles, a centralized viewer-specific visual event engine, approved Factions/Outposts/Crates/Pinata/Kits visual channels and audio configuration placeholders with no sounds selected yet.
