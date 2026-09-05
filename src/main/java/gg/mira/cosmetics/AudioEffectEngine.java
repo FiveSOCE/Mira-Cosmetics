@@ -102,11 +102,25 @@ public final class AudioEffectEngine {
 
     private Sound resolve(String raw) {
         if (raw == null || raw.isBlank()) return null;
-        String key = raw.trim().toLowerCase(Locale.ROOT);
-        if (!key.contains(":")) key = "minecraft:" + key.replace('_', '.');
+        String configured = raw.trim();
+
+        // Mira configs traditionally use Bukkit constant names such as
+        // ENTITY_EXPERIENCE_ORB_PICKUP and BLOCK_NOTE_BLOCK_PLING. Those cannot
+        // be converted safely by replacing every underscore with a dot because
+        // registry paths contain compound segments such as experience_orb and
+        // note_block. Resolve the Bukkit constant first.
+        try {
+            Object value = Sound.class.getField(configured.toUpperCase(Locale.ROOT)).get(null);
+            if (value instanceof Sound sound) return sound;
+        } catch (ReflectiveOperationException ignored) {
+        }
+
+        // Also accept explicit registry keys such as
+        // minecraft:entity.experience_orb.pickup.
+        String key = configured.toLowerCase(Locale.ROOT);
+        if (!key.contains(":")) key = "minecraft:" + key;
         NamespacedKey namespaced = NamespacedKey.fromString(key);
-        if (namespaced == null) return null;
-        Sound sound = Registry.SOUNDS.get(namespaced);
+        Sound sound = namespaced == null ? null : Registry.SOUNDS.get(namespaced);
         if (sound == null) plugin.getLogger().warning("Unknown configured sound: " + raw);
         return sound;
     }
