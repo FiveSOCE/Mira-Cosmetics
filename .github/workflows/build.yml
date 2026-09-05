@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.7
-          path: build/libs/MiraCosmetics-0.1.7.jar
+          name: MiraCosmetics-0.1.8
+          path: build/libs/MiraCosmetics-0.1.8.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.7 release if missing
+      - name: Publish v0.1.8 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.7 >/dev/null 2>&1; then
-            gh release create v0.1.7 \
-              build/libs/MiraCosmetics-0.1.7.jar \
+          if ! gh release view v0.1.8 >/dev/null 2>&1; then
+            gh release create v0.1.8 \
+              build/libs/MiraCosmetics-0.1.8.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.7" \
-              --notes "Final first-pass audio cosmetics: configurable visual/audio separation, approved ecosystem sound profiles, nearby teleport completion audio, and cancellation-safe teleport warmup sequences."
+              --title "MiraCosmetics v0.1.8" \
+              --notes "Hotfixes silent existing installations by merging missing audio config defaults without overwriting admin edits, adds explicit visual-only and server-wide audio entry points, splits bounty placed/received sounds, and uses the End Portal activation sound for large global bounty claims."
           fi
