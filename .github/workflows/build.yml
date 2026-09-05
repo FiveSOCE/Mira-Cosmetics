@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.10
-          path: build/libs/MiraCosmetics-0.1.10.jar
+          name: MiraCosmetics-0.1.11
+          path: build/libs/MiraCosmetics-0.1.11.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.10 release if missing
+      - name: Publish v0.1.11 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.10 >/dev/null 2>&1; then
-            gh release create v0.1.10 \
-              build/libs/MiraCosmetics-0.1.10.jar \
+          if ! gh release view v0.1.11 >/dev/null 2>&1; then
+            gh release create v0.1.11 \
+              build/libs/MiraCosmetics-0.1.11.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.10" \
-              --notes "Adds a dedicated CS2-style crate spin tick sound using a short mechanical note-block hat click. MiraCrates fires it on every reel movement so opening audio remains perfectly synchronized with the slider."
+              --title "MiraCosmetics v0.1.11" \
+              --notes "Replaces the too-subtle crate spin hat sound with a clearly audible UI button click and safely migrates untouched existing crate_spin_tick defaults without overwriting custom sound settings."
           fi
