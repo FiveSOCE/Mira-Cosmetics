@@ -261,6 +261,10 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         playEvent(player, eventId, location);
     }
 
+    public void playVisualOnlyEvent(Player player, String eventId, Location location) {
+        if (visualEngine != null) visualEngine.play(player, eventId, location);
+    }
+
     public void playAudioEvent(Player player, String eventId, Location location) {
         if (audioEngine != null) audioEngine.play(player, eventId, location);
     }
