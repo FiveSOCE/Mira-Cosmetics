@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.1
-          path: build/libs/MiraCosmetics-0.1.1.jar
+          name: MiraCosmetics-0.1.2
+          path: build/libs/MiraCosmetics-0.1.2.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.1 release if missing
+      - name: Publish v0.1.2 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.1 >/dev/null 2>&1; then
-            gh release create v0.1.1 \
-              build/libs/MiraCosmetics-0.1.1.jar \
+          if ! gh release view v0.1.2 >/dev/null 2>&1; then
+            gh release create v0.1.2 \
+              build/libs/MiraCosmetics-0.1.2.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.1" \
-              --notes "Makes MiraCosmetics the centralized TELEPORT/FLY visual-effects authority, adds global teleport effects, default/custom flight particles, Core service/audit integration and safer persistent equip/revoke handling."
+              --title "MiraCosmetics v0.1.2" \
+              --notes "Makes blue-white-blue triple teleport rings and a white under-foot flight trail the canonical Mira TELEPORT/FLY visuals while preserving MiraCosmetics as the sole rendering authority."
           fi
