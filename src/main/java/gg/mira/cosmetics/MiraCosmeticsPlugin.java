@@ -513,13 +513,24 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             if (now - flyThrottle.getOrDefault(player.getUniqueId(), 0L) < throttle) return;
             flyThrottle.put(player.getUniqueId(), now);
 
-            Location feet = player.getLocation().clone().add(0D,
-                    plugin.getConfig().getDouble("effects.fly.y-offset", -0.15D), 0D);
+            Location trail = player.getLocation().clone().add(0D,
+                    plugin.getConfig().getDouble("effects.fly.y-offset", -0.10D), 0D);
+            var direction = player.getLocation().getDirection().setY(0D);
+            if (direction.lengthSquared() > 0.0001D) {
+                direction.normalize().multiply(-Math.max(0D,
+                        plugin.getConfig().getDouble("effects.fly.behind-distance", 0.45D)));
+                trail.add(direction);
+            }
+
             Particle.DustOptions white = new Particle.DustOptions(Color.WHITE,
-                    (float) Math.max(0.5D, plugin.getConfig().getDouble("effects.fly.dust-size", 0.8D)));
-            player.getWorld().spawnParticle(Particle.DUST, feet,
-                    Math.max(1, plugin.getConfig().getInt("effects.fly.count", 2)),
-                    0.12, 0.03, 0.12, 0D, white);
+                    (float) Math.max(0.5D, plugin.getConfig().getDouble("effects.fly.dust-size", 1.35D)));
+            double horizontal = Math.max(0D,
+                    plugin.getConfig().getDouble("effects.fly.spread-horizontal", 0.28D));
+            double vertical = Math.max(0D,
+                    plugin.getConfig().getDouble("effects.fly.spread-vertical", 0.10D));
+            player.getWorld().spawnParticle(Particle.DUST, trail,
+                    Math.max(1, plugin.getConfig().getInt("effects.fly.count", 8)),
+                    horizontal, vertical, horizontal, 0D, white);
         }
 
         private void load() {
