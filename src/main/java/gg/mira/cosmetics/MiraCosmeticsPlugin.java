@@ -72,13 +72,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         service.register(new Cosmetic("join_totem", CosmeticType.JOIN, "Totem Arrival", Particle.TOTEM_OF_UNDYING));
         service.register(new Cosmetic("kill_soul", CosmeticType.KILL, "Soul Kill", Particle.SOUL_FIRE_FLAME));
 
-        service.register(new Cosmetic("teleport_portal", CosmeticType.TELEPORT, "Portal Teleport", Particle.PORTAL));
-        service.register(new Cosmetic("teleport_endrod", CosmeticType.TELEPORT, "End Rod Teleport", Particle.END_ROD));
-        service.register(new Cosmetic("teleport_firework", CosmeticType.TELEPORT, "Firework Teleport", Particle.FIREWORK));
-
-        service.register(new Cosmetic("fly_cloud", CosmeticType.FLY, "Cloud Flight", Particle.CLOUD));
-        service.register(new Cosmetic("fly_flame", CosmeticType.FLY, "Flame Flight", Particle.FLAME));
-        service.register(new Cosmetic("fly_endrod", CosmeticType.FLY, "End Rod Flight", Particle.END_ROD));
+        service.register(new Cosmetic("teleport_mira", CosmeticType.TELEPORT, "Mira Teleport Rings", Particle.DUST));
+        service.register(new Cosmetic("fly_white", CosmeticType.FLY, "White Flight Trail", Particle.DUST));
     }
 
     @Override
@@ -355,8 +350,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             Optional<Cosmetic> selected = equipped(player, type);
             if (selected.isPresent()) return selected;
             String defaultId = switch (type) {
-                case TELEPORT -> plugin.getConfig().getString("effects.teleport.default-cosmetic", "teleport_portal");
-                case FLY -> plugin.getConfig().getString("effects.fly.default-cosmetic", "fly_cloud");
+                case TELEPORT -> plugin.getConfig().getString("effects.teleport.default-cosmetic", "teleport_mira");
+                case FLY -> plugin.getConfig().getString("effects.fly.default-cosmetic", "fly_white");
                 default -> null;
             };
             return cosmetic(defaultId);
