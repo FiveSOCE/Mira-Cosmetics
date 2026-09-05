@@ -44,11 +44,12 @@ public final class CosmeticsGuiService implements Listener {
         inventory.setItem(15, item(audio ? Material.NOTE_BLOCK : Material.BARRIER,
                 "Audio Effects: " + (audio ? "ON" : "OFF"),
                 audio ? NamedTextColor.GREEN : NamedTextColor.RED,
-                List.of("Click to toggle all Mira cosmetic sounds.")));
+                List.of("Click to toggle all Mira cosmetic audio.",
+                        "Actual sounds are not selected yet.")));
 
         inventory.setItem(13, item(Material.ENDER_EYE, "Teleport Effects", NamedTextColor.AQUA,
-                List.of("Warmup: blue/white spiral + sound",
-                        "Complete: blue-white-blue rings + sound")));
+                List.of("Warmup: blue/white spiral",
+                        "Complete: blue-white-blue rings")));
 
         inventory.setItem(22, item(Material.FEATHER, "Flight Effects", NamedTextColor.WHITE,
                 List.of("White particle trail beneath your feet.")));
