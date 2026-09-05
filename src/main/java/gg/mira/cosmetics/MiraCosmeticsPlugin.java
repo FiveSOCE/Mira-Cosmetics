@@ -282,8 +282,9 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
     public void playAudioEventGlobal(String eventId, Location source) {
         if (audioEngine == null || eventId == null || eventId.isBlank()) return;
         for (Player viewer : Bukkit.getOnlinePlayers()) {
-            Location at = source == null ? viewer.getLocation() : source;
-            audioEngine.play(viewer, eventId, at);
+            // Global sounds are non-spatial announcements. Use each listener's own location
+            // so players in other worlds hear the event reliably too.
+            audioEngine.play(viewer, eventId, viewer.getLocation());
         }
     }
 
