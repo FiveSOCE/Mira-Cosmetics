@@ -32,6 +32,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
     private CosmeticService service;
     private CosmeticsGuiService gui;
     private VisualEffectEngine visualEngine;
+    private AudioEffectEngine audioEngine;
     private final Map<UUID, Long> trailThrottle = new HashMap<>();
 
     @Override
@@ -42,12 +43,13 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         registerDefaults();
         gui = new CosmeticsGuiService(this, service);
         visualEngine = new VisualEffectEngine(this);
+        audioEngine = new AudioEffectEngine(this);
 
         getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
         core.services().register(CosmeticsApi.class, service);
         core.modules().register(this, "MiraCosmetics");
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "Player cosmetics plus centralized teleport/fly visual effects ready");
+                "Player cosmetics plus centralized visual/audio event effects ready");
 
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(gui, this);
@@ -222,6 +224,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         service.equipped(killer.getUniqueId(), CosmeticType.KILL).ifPresent(cosmetic ->
                 event.getPlayer().getWorld().spawnParticle(cosmetic.particle(),
                         event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 0.8, 0.5, 0.03));
+        playAudioEvent(killer, "player_kill", killer.getLocation());
     }
 
     public boolean visualsEnabled(Player player) {
@@ -240,8 +243,21 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         if (player != null && service != null) service.setAudioEnabled(player.getUniqueId(), enabled);
     }
 
-    public void playVisualEvent(Player player, String eventId, Location location) {
+    public void playEvent(Player player, String eventId, Location location) {
         if (visualEngine != null) visualEngine.play(player, eventId, location);
+        if (audioEngine != null) audioEngine.play(player, eventId, location);
+    }
+
+    /**
+     * Backwards-compatible event entry point used by existing Mira bridges.
+     * It now renders both independently-configurable visual and audio channels.
+     */
+    public void playVisualEvent(Player player, String eventId, Location location) {
+        playEvent(player, eventId, location);
+    }
+
+    public void playAudioEvent(Player player, String eventId, Location location) {
+        if (audioEngine != null) audioEngine.play(player, eventId, location);
     }
 
     private void msg(CommandSender sender, String raw) { core.messages().send(sender, raw); }
@@ -420,7 +436,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         @Override
         public void playTeleportWarmup(Player player, int durationSeconds) {
             if (player == null || !visualEnabled(player.getUniqueId())) return;
-            plugin.playVisualEvent(player, "teleport_warmup", player.getLocation());
+            plugin.playEvent(player, "teleport_warmup", player.getLocation());
         }
 
         @Override
@@ -431,6 +447,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                 renderTeleportRings(origin);
                 renderTeleportRings(destination);
             }
+            plugin.playAudioEvent(player, "teleport_complete",
+                    destination == null ? player.getLocation() : destination);
 
         }
 
