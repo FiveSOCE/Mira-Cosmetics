@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -30,6 +31,7 @@ import java.util.*;
 public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, TabExecutor {
     private MiraCore core;
     private CosmeticService service;
+    private CosmeticsGuiService gui;
     private final Map<UUID, Long> trailThrottle = new HashMap<>();
 
     @Override
@@ -38,6 +40,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         core = MiraCoreProvider.require();
         service = new CosmeticService(this);
         registerDefaults();
+        gui = new CosmeticsGuiService(this, service);
 
         getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
         core.services().register(CosmeticsApi.class, service);
@@ -46,6 +49,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                 "Player cosmetics plus centralized teleport/fly visual effects ready");
 
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(gui, this);
         var command = getCommand("cosmetics");
         if (command != null) {
             command.setExecutor(this);
@@ -79,7 +83,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        String action = args.length == 0 ? "list" : args[0].toLowerCase(Locale.ROOT);
+        String action = args.length == 0 ? "gui" : args[0].toLowerCase(Locale.ROOT);
 
         if (action.equals("grant") || action.equals("revoke")) {
             if (!sender.hasPermission("miracosmetics.admin")) {
@@ -124,6 +128,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         }
 
         switch (action) {
+            case "gui" -> gui.open(player);
             case "list" -> {
                 msg(sender, "&6Mira Cosmetics");
                 for (Cosmetic cosmetic : service.cosmetics()) {
@@ -264,8 +269,13 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         Optional<Cosmetic> equipped(UUID player, CosmeticType type);
         Optional<Cosmetic> effective(UUID player, CosmeticType type);
         Collection<Cosmetic> cosmetics();
+        void playTeleportWarmup(Player player, int durationSeconds);
         void playTeleport(Player player, Location origin, Location destination);
         void playFly(Player player);
+        boolean visualEnabled(UUID player);
+        boolean audioEnabled(UUID player);
+        void setVisualEnabled(UUID player, boolean enabled);
+        void setAudioEnabled(UUID player, boolean enabled);
     }
 
     public static final class CosmeticService implements CosmeticsApi {
@@ -274,6 +284,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         private final Map<String, Cosmetic> registry = new LinkedHashMap<>();
         private final Map<UUID, Set<String>> owned = new HashMap<>();
         private final Map<UUID, EnumMap<CosmeticType, String>> equipped = new HashMap<>();
+        private final Map<UUID, Boolean> visualEnabled = new HashMap<>();
+        private final Map<UUID, Boolean> audioEnabled = new HashMap<>();
         private final Map<UUID, Long> flyThrottle = new HashMap<>();
 
         CosmeticService(MiraCosmeticsPlugin plugin) {
@@ -367,10 +379,66 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         public Collection<Cosmetic> cosmetics() { return List.copyOf(registry.values()); }
 
         @Override
+        public boolean visualEnabled(UUID player) { return visualEnabled.getOrDefault(player, true); }
+
+        @Override
+        public boolean audioEnabled(UUID player) { return audioEnabled.getOrDefault(player, true); }
+
+        @Override
+        public synchronized void setVisualEnabled(UUID player, boolean enabled) {
+            visualEnabled.put(player, enabled);
+            save();
+        }
+
+        @Override
+        public synchronized void setAudioEnabled(UUID player, boolean enabled) {
+            audioEnabled.put(player, enabled);
+            save();
+        }
+
+        @Override
+        public void playTeleportWarmup(Player player, int durationSeconds) {
+            if (player == null) return;
+            if (audioEnabled(player.getUniqueId()) && plugin.getConfig().getBoolean("effects.teleport.audio.enabled", true)) {
+                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.8F, 1.25F);
+            }
+            if (!visualEnabled(player.getUniqueId())
+                    || !plugin.getConfig().getBoolean("effects.teleport.visual.enabled", true)) return;
+
+            int ticks = Math.max(1, durationSeconds * 20);
+            int task = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
+                int age;
+                @Override public void run() {
+                    if (!player.isOnline() || age >= ticks) return;
+                    double angle = age * 0.35D;
+                    double radius = 0.9D;
+                    double y = 0.15D + (age % 20) / 20.0D * 1.8D;
+                    Location base = player.getLocation();
+                    Particle.DustOptions blue = new Particle.DustOptions(Color.fromRGB(70, 150, 255), 0.8F);
+                    Particle.DustOptions white = new Particle.DustOptions(Color.WHITE, 0.8F);
+                    Particle.DustOptions dust = ((age / 3) % 2 == 0) ? blue : white;
+                    player.getWorld().spawnParticle(Particle.DUST,
+                            base.getX() + Math.cos(angle) * radius, base.getY() + y,
+                            base.getZ() + Math.sin(angle) * radius, 1, 0D, 0D, 0D, 0D, dust);
+                    age += 2;
+                }
+            }, 0L, 2L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> Bukkit.getScheduler().cancelTask(task), ticks + 2L);
+        }
+
+        @Override
         public void playTeleport(Player player, Location origin, Location destination) {
             if (player == null || !plugin.getConfig().getBoolean("effects.teleport.enabled", true)) return;
-            renderTeleportRings(origin);
-            renderTeleportRings(destination);
+            if (visualEnabled(player.getUniqueId())
+                    && plugin.getConfig().getBoolean("effects.teleport.visual.enabled", true)) {
+                renderTeleportRings(origin);
+                renderTeleportRings(destination);
+            }
+            if (audioEnabled(player.getUniqueId())
+                    && plugin.getConfig().getBoolean("effects.teleport.audio.enabled", true)) {
+                player.playSound(destination == null ? player.getLocation() : destination,
+                        Sound.ENTITY_ENDERMAN_TELEPORT, 0.9F, 1.15F);
+            }
         }
 
         private void renderTeleportRings(Location center) {
@@ -398,7 +466,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
 
         @Override
         public void playFly(Player player) {
-            if (player == null || !plugin.getConfig().getBoolean("effects.fly.enabled", true) || !player.isFlying()) return;
+            if (player == null || !plugin.getConfig().getBoolean("effects.fly.enabled", true)
+                    || !visualEnabled(player.getUniqueId()) || !player.isFlying()) return;
             long now = System.currentTimeMillis();
             long throttle = Math.max(50L, plugin.getConfig().getLong("effects.fly.throttle-millis", 100L));
             if (now - flyThrottle.getOrDefault(player.getUniqueId(), 0L) < throttle) return;
@@ -429,6 +498,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                         if (value != null && !value.isBlank()) slots.put(type, value.toLowerCase(Locale.ROOT));
                     }
                     equipped.put(id, slots);
+                    visualEnabled.put(id, players.getBoolean(uuidText + ".settings.visual", true));
+                    audioEnabled.put(id, players.getBoolean(uuidText + ".settings.audio", true));
                 } catch (IllegalArgumentException ignored) { }
             }
         }
@@ -438,8 +509,12 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             Set<UUID> players = new HashSet<>();
             players.addAll(owned.keySet());
             players.addAll(equipped.keySet());
+            players.addAll(visualEnabled.keySet());
+            players.addAll(audioEnabled.keySet());
             for (UUID id : players) {
                 yaml.set("players." + id + ".owned", new ArrayList<>(owned.getOrDefault(id, Set.of())));
+                yaml.set("players." + id + ".settings.visual", visualEnabled.getOrDefault(id, true));
+                yaml.set("players." + id + ".settings.audio", audioEnabled.getOrDefault(id, true));
                 EnumMap<CosmeticType, String> slots = equipped.get(id);
                 if (slots != null) {
                     for (Map.Entry<CosmeticType, String> entry : slots.entrySet()) {
