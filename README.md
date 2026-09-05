@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.7**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.7/MiraCosmetics-0.1.7.jar)
+[**Download MiraCosmetics v0.1.8**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.8/MiraCosmetics-0.1.8.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -165,3 +165,14 @@ Adds independent persistent Visual/Audio GUI toggles, a centralized viewer-speci
 ## MiraCosmetics Audio Integration (0.1.7)
 
 Adds the first active Mira audio-cosmetics pass with persistent `/cosmetics` Audio control, independent per-event audio settings, configurable sound/volume/pitch, teleport and crate pitch sequences, nearby opted-in teleport completion audio, cancellation-safe teleport warmup sequences, and shared event channels for combat/bounties, Outposts, Crates, Kits, Tags and economy systems.
+
+
+## Audio Audience & Config Hotfix (0.1.8)
+
+Existing installations now merge missing bundled audio-event defaults into `config.yml` without overwriting administrator edits. This fixes older MiraCosmetics configs where newly-added sound channels were absent and therefore silently treated as disabled.
+
+New presentation entry points separate visual-only, player-audio, nearby-audio and server-wide-audio delivery so event owners can choose the correct audience without duplicate effects.
+
+Bounty audio now includes separate `bounty_placed` and `bounty_received` events, and large bounty claims use the End Portal activation sound.
+
+Server-wide audio is played at each listener's own location so players hear global events reliably across different worlds.
