@@ -260,6 +260,16 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         if (audioEngine != null) audioEngine.play(player, eventId, location);
     }
 
+    public void playAudioEventNearby(Location location, String eventId, double radius) {
+        if (audioEngine == null || location == null || location.getWorld() == null) return;
+        double radiusSquared = Math.max(0D, radius) * Math.max(0D, radius);
+        for (Player viewer : location.getWorld().getPlayers()) {
+            if (viewer.getLocation().distanceSquared(location) <= radiusSquared) {
+                audioEngine.play(viewer, eventId, location);
+            }
+        }
+    }
+
     private void msg(CommandSender sender, String raw) { core.messages().send(sender, raw); }
 
     @Override
@@ -447,8 +457,9 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                 renderTeleportRings(origin);
                 renderTeleportRings(destination);
             }
-            plugin.playAudioEvent(player, "teleport_complete",
-                    destination == null ? player.getLocation() : destination);
+            Location soundLocation = destination == null ? player.getLocation() : destination;
+            plugin.playAudioEventNearby(soundLocation, "teleport_complete",
+                    Math.max(0D, plugin.getConfig().getDouble("effects.teleport.audio-radius", 16.0D)));
 
         }
 
