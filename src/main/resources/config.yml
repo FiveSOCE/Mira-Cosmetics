@@ -62,12 +62,15 @@ events:
   bounty_placed:
     visual: { enabled: false }
     audio: { enabled: true, sound: BLOCK_BELL_USE, volume: 0.8, pitch: 0.65 }
+  bounty_received:
+    visual: { enabled: false }
+    audio: { enabled: true, sound: BLOCK_BELL_USE, volume: 0.9, pitch: 0.5 }
   bounty_claimed:
     visual: { enabled: false }
     audio: { enabled: true, sound: ENTITY_PLAYER_LEVELUP, volume: 0.8, pitch: 1.15 }
   bounty_claimed_large:
     visual: { enabled: false }
-    audio: { enabled: true, sound: UI_TOAST_CHALLENGE_COMPLETE, volume: 0.8, pitch: 1.0 }
+    audio: { enabled: true, sound: BLOCK_END_PORTAL_SPAWN, volume: 1.0, pitch: 1.0 }
 
   faction_claim:
     visual: { enabled: true }
