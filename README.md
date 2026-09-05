@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.1**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.1/MiraCosmetics-0.1.1.jar)
+[**Download MiraCosmetics v0.1.2**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.2/MiraCosmetics-0.1.2.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -30,9 +30,9 @@ Built-in channels are:
 - `TELEPORT`
 - `FLY`
 
-Built-in examples include flame/heart trails, a totem join effect, a soul-fire kill effect, Portal/End Rod/Firework teleport effects and Cloud/Flame/End Rod flight effects.
+Built-in examples include flame/heart trails, a totem join effect and a soul-fire kill effect. TELEPORT and FLY are now canonical Mira signatures rather than selectable particle variants.
 
-v0.1.1 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
+v0.1.2 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
 
 MiraFly can use the public `CosmeticsApi.playFly(Player)` method for continuous flight effects. MiraCosmetics owns throttling and effect selection, so MiraFly does not need to know which particle a player selected.
 
@@ -111,3 +111,20 @@ gradle clean build
 ```
 
 The output JAR is created in `build/libs/`.
+
+
+## Canonical Teleport Effect
+
+Every successful Bukkit/Paper teleport handled by MiraCosmetics renders three horizontal rings around the player at both the origin and destination:
+
+1. blue
+2. white
+3. blue
+
+The rings use DUST particles and are configurable through ring point count, radius, vertical spacing and base Y offset. Other Mira plugins must not render their own teleport particles.
+
+## Canonical Flight Effect
+
+While MiraFly reports a player as actively flying, MiraCosmetics renders a white DUST particle trail directly under the player's feet.
+
+The trail throttle, particle count, Y offset and dust size are configurable in MiraCosmetics. MiraFly remains the sole authority for flight state; MiraCosmetics only renders the visual.
