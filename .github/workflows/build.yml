@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.5
-          path: build/libs/MiraCosmetics-0.1.5.jar
+          name: MiraCosmetics-0.1.6
+          path: build/libs/MiraCosmetics-0.1.6.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.5 release if missing
+      - name: Publish v0.1.6 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.5 >/dev/null 2>&1; then
-            gh release create v0.1.5 \
-              build/libs/MiraCosmetics-0.1.5.jar \
+          if ! gh release view v0.1.6 >/dev/null 2>&1; then
+            gh release create v0.1.6 \
+              build/libs/MiraCosmetics-0.1.6.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.5" \
-              --notes "Adds the first configurable Mira audio-cosmetics pass: teleport sequences, kill/bounty channels, Outposts, Crates, Kits, Tags and economy sounds, all respecting the persistent /cosmetics Audio toggle and per-event audio settings."
+              --title "MiraCosmetics v0.1.6" \
+              --notes "Finalized first Mira audio-cosmetics pass with independent player/per-event audio controls, teleport warmup/completion including nearby opted-in listeners, combat/bounty channels, Outposts, Crates, Kits, Tags and economy sound profiles."
           fi
