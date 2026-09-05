@@ -6,6 +6,7 @@ import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public final class AudioEffectEngine {
     private final MiraCosmeticsPlugin plugin;
     private final Map<UUID, Map<String, Long>> lastPlayed = new HashMap<>();
+    private final Map<UUID, Map<String, BukkitTask>> sequences = new HashMap<>();
 
     public AudioEffectEngine(MiraCosmeticsPlugin plugin) {
         this.plugin = plugin;
@@ -25,6 +27,7 @@ public final class AudioEffectEngine {
         if (player == null || eventId == null || eventId.isBlank() || !player.isOnline()) return;
         String id = eventId.toLowerCase(Locale.ROOT);
         if (!plugin.audioEnabled(player)) return;
+        if (id.equals("teleport_cancel")) cancelSequence(player.getUniqueId(), "teleport_warmup");
         String base = "events." + id + ".audio.";
         if (!plugin.getConfig().getBoolean(base + "enabled", false)) return;
 
@@ -37,14 +40,14 @@ public final class AudioEffectEngine {
         Location at = location == null ? player.getLocation() : location;
         playConfigured(player, at, base, "sound", "volume", "pitch");
 
-        if (id.equals("teleport_warmup")) playPitchSequence(player, at, base + "progress.");
-        if (id.equals("crate_open")) playPitchSequence(player, at, base + "progress.");
+        if (id.equals("teleport_warmup")) playPitchSequence(player, id, at, base + "progress.");
+        if (id.equals("crate_open")) playPitchSequence(player, id, at, base + "progress.");
         if (id.equals("crate_reward_legendary")) {
             playConfigured(player, at, base + "secondary.", "sound", "volume", "pitch");
         }
     }
 
-    private void playPitchSequence(Player player, Location location, String base) {
+    private void playPitchSequence(Player player, String eventId, Location location, String base) {
         if (!plugin.getConfig().getBoolean(base + "enabled", true)) return;
         Sound sound = resolve(plugin.getConfig().getString(base + "sound", ""));
         if (sound == null) return;
@@ -54,19 +57,38 @@ public final class AudioEffectEngine {
         float volume = positive(plugin.getConfig().getDouble(base + "volume", 0.35D), 0.35F);
         long interval = Math.max(1L, plugin.getConfig().getLong(base + "interval-ticks", 12L));
 
-        new BukkitRunnable() {
+        cancelSequence(player.getUniqueId(), eventId);
+        BukkitRunnable runnable = new BukkitRunnable() {
             int index;
             @Override
             public void run() {
                 if (!player.isOnline() || !plugin.audioEnabled(player) || index >= pitches.size()) {
                     cancel();
+                    removeSequence(player.getUniqueId(), eventId);
                     return;
                 }
                 float pitch = positive(pitches.get(index), 1.0F);
                 player.playSound(location, sound, volume, pitch);
                 index++;
             }
-        }.runTaskTimer(plugin, interval, interval);
+        };
+        BukkitTask task = runnable.runTaskTimer(plugin, interval, interval);
+        sequences.computeIfAbsent(player.getUniqueId(), ignored -> new HashMap<>()).put(eventId, task);
+    }
+
+    private void cancelSequence(UUID playerId, String eventId) {
+        Map<String, BukkitTask> playerTasks = sequences.get(playerId);
+        if (playerTasks == null) return;
+        BukkitTask task = playerTasks.remove(eventId);
+        if (task != null) task.cancel();
+        if (playerTasks.isEmpty()) sequences.remove(playerId);
+    }
+
+    private void removeSequence(UUID playerId, String eventId) {
+        Map<String, BukkitTask> playerTasks = sequences.get(playerId);
+        if (playerTasks == null) return;
+        playerTasks.remove(eventId);
+        if (playerTasks.isEmpty()) sequences.remove(playerId);
     }
 
     private void playConfigured(Player player, Location location, String base,
