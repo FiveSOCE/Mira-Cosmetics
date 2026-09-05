@@ -1,9 +1,9 @@
 name: MiraCosmetics
-version: 0.1.4
+version: 0.1.5
 main: gg.mira.cosmetics.MiraCosmeticsPlugin
 api-version: '1.21'
 author: FiveSOCE
-description: Centralized Mira visual authority with canonical teleport rings and flight trail.
+description: Centralized Mira visual/audio authority for ecosystem cosmetic events.
 depend: [MiraCore]
 softdepend: [MiraFly, MiraHomes, MiraWarps, MiraRTP]
 commands:
