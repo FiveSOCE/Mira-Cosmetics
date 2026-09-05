@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.3
-          path: build/libs/MiraCosmetics-0.1.3.jar
+          name: MiraCosmetics-0.1.4
+          path: build/libs/MiraCosmetics-0.1.4.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.3 release if missing
+      - name: Publish v0.1.4 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.3 >/dev/null 2>&1; then
-            gh release create v0.1.3 \
-              build/libs/MiraCosmetics-0.1.3.jar \
+          if ! gh release view v0.1.4 >/dev/null 2>&1; then
+            gh release create v0.1.4 \
+              build/libs/MiraCosmetics-0.1.4.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.3" \
-              --notes "Adds persistent Visual/Audio toggles to the /cosmetics GUI and expands teleport effects with a blue-white warmup spiral + sound and blue-white-blue completion rings + teleport sound while retaining the white flight trail."
+              --title "MiraCosmetics v0.1.4" \
+              --notes "Adds independent persistent Visual/Audio GUI toggles, a centralized viewer-specific visual event engine, approved Factions/Outposts/Crates/Pinata/Kits visual channels and audio configuration placeholders with no sounds selected yet."
           fi
