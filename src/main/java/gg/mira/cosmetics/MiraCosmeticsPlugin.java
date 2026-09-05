@@ -41,6 +41,15 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         // Existing installations may predate newer event/audio keys. Merge only missing
         // bundled defaults so new sound channels become live without overwriting admin edits.
         getConfig().options().copyDefaults(true);
+        // Migrate the original crate spin sound only when it is still untouched.
+        // The first tick default was valid but too quiet/subtle in normal gameplay.
+        String spinSound = getConfig().getString("events.crate_spin_tick.audio.sound", "");
+        double spinVolume = getConfig().getDouble("events.crate_spin_tick.audio.volume", 0.24D);
+        if ("BLOCK_NOTE_BLOCK_HAT".equalsIgnoreCase(spinSound) && Math.abs(spinVolume - 0.24D) < 0.0001D) {
+            getConfig().set("events.crate_spin_tick.audio.sound", "UI_BUTTON_CLICK");
+            getConfig().set("events.crate_spin_tick.audio.volume", 0.65D);
+            getConfig().set("events.crate_spin_tick.audio.pitch", 1.65D);
+        }
         saveConfig();
 
         core = MiraCoreProvider.require();
