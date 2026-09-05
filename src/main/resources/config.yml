@@ -2,10 +2,6 @@ effects:
   teleport:
     enabled: true
     default-cosmetic: teleport_mira
-    visual:
-      enabled: true
-    audio:
-      enabled: true
     ring-points: 36
     ring-radius: 1.0
     ring-spacing: 0.55
@@ -24,6 +20,95 @@ effects:
     enabled: true
   kill:
     enabled: true
+
+# Every event can independently enable/disable visuals and audio.
+# Audio selections are intentionally blank until the sound pass is approved.
+events:
+  teleport_warmup:
+    visual: { enabled: true, duration-ticks: 80 }
+    audio: { enabled: false, sound: "" }
+  teleport_complete:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  faction_claim:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  faction_unclaim:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  safezone_enter:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  warzone_enter:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  faction_create:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  faction_upgrade:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  faction_disband:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  outpost_captured:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  crate_open:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  crate_reward_common:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  crate_reward_rare:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  crate_reward_legendary:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  pinata_spawn:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  pinata_hit:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  pinata_low_health:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  pinata_death:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  kit_claim:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+  kit_temp_claim:
+    visual: { enabled: true }
+    audio: { enabled: false, sound: "" }
+
+  # Approved for audio later - no sound is implemented yet.
+  combat_tag_start:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
+  combat_tag_end:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
+  tag_equip:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
+  tag_unlock:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
+  economy_purchase:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
+  economy_sale:
+    visual: { enabled: false }
+    audio: { enabled: false, sound: "" }
 
 messages:
   prefix: '&5&lMira &8&l>> &r'
