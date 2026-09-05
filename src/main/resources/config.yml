@@ -2,6 +2,10 @@ effects:
   teleport:
     enabled: true
     default-cosmetic: teleport_mira
+    visual:
+      enabled: true
+    audio:
+      enabled: true
     ring-points: 36
     ring-radius: 1.0
     ring-spacing: 0.55
