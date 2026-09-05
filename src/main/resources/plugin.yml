@@ -1,5 +1,5 @@
 name: MiraCosmetics
-version: 0.1.10
+version: 0.1.11
 main: gg.mira.cosmetics.MiraCosmeticsPlugin
 api-version: '1.21'
 author: FiveSOCE
