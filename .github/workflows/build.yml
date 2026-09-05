@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.8
-          path: build/libs/MiraCosmetics-0.1.8.jar
+          name: MiraCosmetics-0.1.9
+          path: build/libs/MiraCosmetics-0.1.9.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.8 release if missing
+      - name: Publish v0.1.9 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.8 >/dev/null 2>&1; then
-            gh release create v0.1.8 \
-              build/libs/MiraCosmetics-0.1.8.jar \
+          if ! gh release view v0.1.9 >/dev/null 2>&1; then
+            gh release create v0.1.9 \
+              build/libs/MiraCosmetics-0.1.9.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.8" \
-              --notes "Hotfixes silent existing installations by merging missing audio config defaults without overwriting admin edits, adds explicit visual-only and server-wide audio entry points, splits bounty placed/received sounds, and uses the End Portal activation sound for large global bounty claims."
+              --title "MiraCosmetics v0.1.9" \
+              --notes "Fixes Bukkit sound constant resolution for the entire Cosmetics audio table and strengthens the default flight trail with denser, wider, larger white dust positioned behind the flying player."
           fi
