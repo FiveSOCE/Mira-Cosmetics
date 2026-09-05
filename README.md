@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.9**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.9/MiraCosmetics-0.1.9.jar)
+[**Download MiraCosmetics v0.1.10**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.10/MiraCosmetics-0.1.10.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -183,3 +183,8 @@ Server-wide audio is played at each listener's own location so players hear glob
 MiraCosmetics now resolves Bukkit-style sound constants such as `BLOCK_NOTE_BLOCK_PLING`, `ENTITY_EXPERIENCE_ORB_PICKUP` and `ENTITY_ENDERMAN_TELEPORT` directly before falling back to explicit registry keys. This fixes the previous underscore-to-dot conversion bug that produced `Unknown configured sound` warnings and caused configured sounds to fail.
 
 The default flight effect is also substantially stronger: denser white dust, larger particle size, wider spread, faster refresh and a slight offset behind the flying player so it reads as a visible trail rather than sparse particles around the feet.
+
+
+## CS2-Style Crate Spin Audio (0.1.10)
+
+Adds `crate_spin_tick`, a short `BLOCK_NOTE_BLOCK_HAT` mechanical click at low volume and raised pitch. MiraCrates triggers it on every reel movement, so the sound stays locked to the visual case animation. Reward rarity sounds still play only when the reel lands.
