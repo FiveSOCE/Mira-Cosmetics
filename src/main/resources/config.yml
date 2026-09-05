@@ -129,7 +129,7 @@ events:
         pitches: [0.7, 0.85, 1.0, 1.2, 1.4, 1.6, 1.8]
   crate_spin_tick:
     visual: { enabled: false }
-    audio: { enabled: true, sound: BLOCK_NOTE_BLOCK_HAT, volume: 0.24, pitch: 1.35 }
+    audio: { enabled: true, sound: UI_BUTTON_CLICK, volume: 0.65, pitch: 1.65 }
 
   crate_reward_common:
     visual: { enabled: true }
