@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.2**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.2/MiraCosmetics-0.1.2.jar)
+[**Download MiraCosmetics v0.1.3**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.3/MiraCosmetics-0.1.3.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
@@ -32,7 +32,7 @@ Built-in channels are:
 
 Built-in examples include flame/heart trails, a totem join effect and a soul-fire kill effect. TELEPORT and FLY are now canonical Mira signatures rather than selectable particle variants.
 
-v0.1.2 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
+v0.1.3 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
 
 MiraFly can use the public `CosmeticsApi.playFly(Player)` method for continuous flight effects. MiraCosmetics owns throttling and effect selection, so MiraFly does not need to know which particle a player selected.
 
@@ -128,3 +128,31 @@ The rings use DUST particles and are configurable through ring point count, radi
 While MiraFly reports a player as actively flying, MiraCosmetics renders a white DUST particle trail directly under the player's feet.
 
 The trail throttle, particle count, Y offset and dust size are configurable in MiraCosmetics. MiraFly remains the sole authority for flight state; MiraCosmetics only renders the visual.
+
+
+## Player Effect Toggles
+
+Running `/cosmetics` with no arguments now opens the MiraCosmetics GUI.
+
+The GUI includes two persistent per-player controls:
+
+- **Visual Effects** - enables/disables Mira cosmetic particle rendering.
+- **Audio Effects** - enables/disables Mira cosmetic sounds.
+
+Both settings are stored in `cosmetics.yml` and survive restarts.
+
+## Teleport Package
+
+Teleport effects now include both warmup and completion phases.
+
+**Warmup**
+- blue/white rising spiral around the player
+- beacon-style warmup sound
+- triggered by consumers such as MiraWarps when their teleport warmup begins
+
+**Completion**
+- blue-white-blue horizontal rings at the origin and destination
+- teleport completion sound
+- only fires from the real successful Bukkit/Paper teleport event
+
+Visual and audio channels respect the player's GUI toggles independently.
