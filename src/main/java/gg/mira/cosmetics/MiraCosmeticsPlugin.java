@@ -38,6 +38,11 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // Existing installations may predate newer event/audio keys. Merge only missing
+        // bundled defaults so new sound channels become live without overwriting admin edits.
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+
         core = MiraCoreProvider.require();
         service = new CosmeticService(this);
         registerDefaults();
@@ -267,6 +272,14 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
             if (viewer.getLocation().distanceSquared(location) <= radiusSquared) {
                 audioEngine.play(viewer, eventId, location);
             }
+        }
+    }
+
+    public void playAudioEventGlobal(String eventId, Location source) {
+        if (audioEngine == null || eventId == null || eventId.isBlank()) return;
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            Location at = source == null ? viewer.getLocation() : source;
+            audioEngine.play(viewer, eventId, at);
         }
     }
 
