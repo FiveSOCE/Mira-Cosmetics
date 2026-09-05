@@ -1,14 +1,18 @@
 effects:
   teleport:
     enabled: true
-    default-cosmetic: teleport_portal
-    count-origin: 24
-    count-destination: 32
+    default-cosmetic: teleport_mira
+    ring-points: 36
+    ring-radius: 1.0
+    ring-spacing: 0.55
+    base-y-offset: 0.15
   fly:
     enabled: true
-    default-cosmetic: fly_cloud
-    throttle-millis: 250
+    default-cosmetic: fly_white
+    throttle-millis: 100
     count: 2
+    y-offset: -0.15
+    dust-size: 0.8
   trail:
     enabled: true
     throttle-millis: 250
@@ -18,4 +22,4 @@ effects:
     enabled: true
 
 messages:
-  prefix: '&5&lMira &8>> &r'
+  prefix: '&5&lMira &8&l>> &r'
