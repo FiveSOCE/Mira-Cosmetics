@@ -6,6 +6,7 @@ effects:
     ring-radius: 1.0
     ring-spacing: 0.55
     base-y-offset: 0.15
+    audio-radius: 16.0
     visual:
       enabled: true
   fly:
