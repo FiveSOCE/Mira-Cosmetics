@@ -27,19 +27,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MiraCosmetics-0.1.9
-          path: build/libs/MiraCosmetics-0.1.9.jar
+          name: MiraCosmetics-0.1.10
+          path: build/libs/MiraCosmetics-0.1.10.jar
           if-no-files-found: error
 
-      - name: Publish v0.1.9 release if missing
+      - name: Publish v0.1.10 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.9 >/dev/null 2>&1; then
-            gh release create v0.1.9 \
-              build/libs/MiraCosmetics-0.1.9.jar \
+          if ! gh release view v0.1.10 >/dev/null 2>&1; then
+            gh release create v0.1.10 \
+              build/libs/MiraCosmetics-0.1.10.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCosmetics v0.1.9" \
-              --notes "Fixes Bukkit sound constant resolution for the entire Cosmetics audio table and strengthens the default flight trail with denser, wider, larger white dust positioned behind the flying player."
+              --title "MiraCosmetics v0.1.10" \
+              --notes "Adds a dedicated CS2-style crate spin tick sound using a short mechanical note-block hat click. MiraCrates fires it on every reel movement so opening audio remains perfectly synchronized with the slider."
           fi
