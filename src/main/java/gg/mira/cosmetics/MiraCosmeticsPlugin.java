@@ -7,7 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -32,6 +31,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
     private MiraCore core;
     private CosmeticService service;
     private CosmeticsGuiService gui;
+    private VisualEffectEngine visualEngine;
     private final Map<UUID, Long> trailThrottle = new HashMap<>();
 
     @Override
@@ -41,6 +41,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
         service = new CosmeticService(this);
         registerDefaults();
         gui = new CosmeticsGuiService(this, service);
+        visualEngine = new VisualEffectEngine(this);
 
         getServer().getServicesManager().register(CosmeticsApi.class, service, this, ServicePriority.Normal);
         core.services().register(CosmeticsApi.class, service);
@@ -223,6 +224,26 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                         event.getPlayer().getLocation().add(0, 1, 0), 30, 0.5, 0.8, 0.5, 0.03));
     }
 
+    public boolean visualsEnabled(Player player) {
+        return player != null && service != null && service.visualEnabled(player.getUniqueId());
+    }
+
+    public boolean audioEnabled(Player player) {
+        return player != null && service != null && service.audioEnabled(player.getUniqueId());
+    }
+
+    public void setVisualsEnabled(Player player, boolean enabled) {
+        if (player != null && service != null) service.setVisualEnabled(player.getUniqueId(), enabled);
+    }
+
+    public void setAudioEnabled(Player player, boolean enabled) {
+        if (player != null && service != null) service.setAudioEnabled(player.getUniqueId(), enabled);
+    }
+
+    public void playVisualEvent(Player player, String eventId, Location location) {
+        if (visualEngine != null) visualEngine.play(player, eventId, location);
+    }
+
     private void msg(CommandSender sender, String raw) { core.messages().send(sender, raw); }
 
     @Override
@@ -398,32 +419,8 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
 
         @Override
         public void playTeleportWarmup(Player player, int durationSeconds) {
-            if (player == null) return;
-            if (audioEnabled(player.getUniqueId()) && plugin.getConfig().getBoolean("effects.teleport.audio.enabled", true)) {
-                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.8F, 1.25F);
-            }
-            if (!visualEnabled(player.getUniqueId())
-                    || !plugin.getConfig().getBoolean("effects.teleport.visual.enabled", true)) return;
-
-            int ticks = Math.max(1, durationSeconds * 20);
-            int task = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
-                int age;
-                @Override public void run() {
-                    if (!player.isOnline() || age >= ticks) return;
-                    double angle = age * 0.35D;
-                    double radius = 0.9D;
-                    double y = 0.15D + (age % 20) / 20.0D * 1.8D;
-                    Location base = player.getLocation();
-                    Particle.DustOptions blue = new Particle.DustOptions(Color.fromRGB(70, 150, 255), 0.8F);
-                    Particle.DustOptions white = new Particle.DustOptions(Color.WHITE, 0.8F);
-                    Particle.DustOptions dust = ((age / 3) % 2 == 0) ? blue : white;
-                    player.getWorld().spawnParticle(Particle.DUST,
-                            base.getX() + Math.cos(angle) * radius, base.getY() + y,
-                            base.getZ() + Math.sin(angle) * radius, 1, 0D, 0D, 0D, 0D, dust);
-                    age += 2;
-                }
-            }, 0L, 2L);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> Bukkit.getScheduler().cancelTask(task), ticks + 2L);
+            if (player == null || !visualEnabled(player.getUniqueId())) return;
+            plugin.playVisualEvent(player, "teleport_warmup", player.getLocation());
         }
 
         @Override
@@ -434,11 +431,7 @@ public final class MiraCosmeticsPlugin extends JavaPlugin implements Listener, T
                 renderTeleportRings(origin);
                 renderTeleportRings(destination);
             }
-            if (audioEnabled(player.getUniqueId())
-                    && plugin.getConfig().getBoolean("effects.teleport.audio.enabled", true)) {
-                player.playSound(destination == null ? player.getLocation() : destination,
-                        Sound.ENTITY_ENDERMAN_TELEPORT, 0.9F, 1.15F);
-            }
+
         }
 
         private void renderTeleportRings(Location center) {
