@@ -4,7 +4,7 @@ MiraCosmetics is the cosmetic unlock and centralized visual-effects framework fo
 
 ## Download
 
-[**Download MiraCosmetics v0.1.11**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.11/MiraCosmetics-0.1.11.jar)
+[**Download MiraCosmetics v0.1.11**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.12/MiraCosmetics-0.1.12.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
