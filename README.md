@@ -1,12 +1,14 @@
 # MiraCosmetics
 
-MiraCosmetics is the cosmetic unlock and centralized visual-effects framework for the Mira Paper server suite. It manages persistent cosmetic ownership/equipment and is the suite authority for reusable particle effects such as trails, joins, kills, teleports and flight.
-
 ## Download
 
-[**Download MiraCosmetics v0.1.11**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.12/MiraCosmetics-0.1.12.jar)
+**Latest compatibility release: v0.1.12**
 
-[View All Releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
+[**Download MiraCosmetics-0.1.12.jar**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.12/MiraCosmetics-0.1.12.jar)
+
+[View all releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
+
+MiraCosmetics is the cosmetic unlock and centralized visual-effects framework for the Mira Paper server suite. It manages persistent cosmetic ownership/equipment and is the suite authority for reusable particle effects such as trails, joins, kills, teleports and flight.
 
 ## Requirements / Dependencies
 
