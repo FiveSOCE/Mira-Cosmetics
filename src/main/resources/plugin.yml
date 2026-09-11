@@ -1,11 +1,11 @@
 name: MiraCosmetics
-version: 0.1.12
+version: 0.1.13
 main: gg.mira.cosmetics.MiraCosmeticsPlugin
 api-version: '1.21'
 author: FiveSOCE
 description: Centralized Mira visual/audio authority for ecosystem cosmetic events.
 depend: [MiraCore]
-softdepend: [MiraFly, MiraHomes, MiraWarps, MiraRTP]
+softdepend: [Essentials, MiraFly, MiraHomes, MiraWarps, MiraRTP, MiraFactions]
 commands:
   cosmetics:
     aliases: [cosmetic]
