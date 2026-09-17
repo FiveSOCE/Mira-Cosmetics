@@ -1,110 +1,160 @@
 # MiraCosmetics
 
-## Download
+Centralized visual and audio effects framework for the Mira Paper server suite.
 
-**Latest compatibility release: v0.1.12**
+MiraCosmetics owns persistent cosmetic unlocks/equipment plus the shared presentation channels used by Mira teleports, flight, crates, kits, outposts, combat, bounties, tags and other suite events.
 
-[**Download MiraCosmetics-0.1.12.jar**](https://github.com/FiveSOCE/Mira-Cosmetics/releases/download/v0.1.12/MiraCosmetics-0.1.12.jar)
+## Current Release
 
-[View all releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
+**v0.1.13** — compatible with Paper/Minecraft **1.21.11 through 26.2** using Java 21 bytecode.
 
-MiraCosmetics is the cosmetic unlock and centralized visual-effects framework for the Mira Paper server suite. It manages persistent cosmetic ownership/equipment and is the suite authority for reusable particle effects such as trails, joins, kills, teleports and flight.
+[View releases](https://github.com/FiveSOCE/Mira-Cosmetics/releases)
 
-## Requirements / Dependencies
+## Requirements / Integrations
 
-- Paper 1.21.11
+- Paper 1.21.11 through 26.2
 - Java 21
-- MiraCore 0.2.0 or newer
-- MiraFly optional consumer
-- MiraHomes optional consumer
-- MiraWarps optional consumer
-- MiraRTP optional consumer
+- MiraCore
+- optional consumers include MiraFly, MiraHomes, MiraWarps, MiraRTP, MiraCrates, MiraKits, MiraOutposts and other Mira modules
 
-## How MiraCosmetics Works
+## Player Controls
 
-Cosmetics are registered under stable IDs and belong to effect channels. Player unlocks and equipped choices persist across restarts.
+Running `/cosmetics` opens the player GUI.
 
-Built-in channels are:
+Each player has two persistent independent toggles:
 
-- `TRAIL`
-- `JOIN`
-- `KILL`
-- `TELEPORT`
-- `FLY`
+- **Visual Effects** — particles and other visual presentation
+- **Audio Effects** — Mira sound presentation
 
-Built-in examples include flame/heart trails, a totem join effect and a soul-fire kill effect. TELEPORT and FLY are now canonical Mira signatures rather than selectable particle variants.
+Both are stored in `cosmetics.yml` and survive restarts.
 
-v0.1.4 makes MiraCosmetics the first-party visual-effects authority for Mira teleports and flight. A global `PlayerTeleportEvent` listener applies the selected/default TELEPORT effect at both the origin and destination, so Essentials `/spawn`, Essentials teleports, MiraHomes, MiraWarps, MiraRTP and other proper Bukkit/Paper teleports automatically receive the same effect pipeline without duplicating particle logic in every plugin.
+## Cosmetic Channels
 
-MiraFly can use the public `CosmeticsApi.playFly(Player)` method for continuous flight effects. MiraCosmetics owns throttling and effect selection, so MiraFly does not need to know which particle a player selected.
+Built-in persistent cosmetic channels include:
 
-## Default Visual Effects
+```text
+TRAIL
+JOIN
+KILL
+TELEPORT
+FLY
+```
 
-### Teleport
+MiraCosmetics also exposes shared event presentation for suite-owned systems such as:
 
-- `teleport_portal` - default Portal effect
-- `teleport_endrod` - End Rod effect
-- `teleport_firework` - Firework effect
+- teleport warmup/completion/cancellation
+- combat/bounty events
+- outpost states and captures
+- crate opening/reward rarity
+- kit claims
+- tags
+- economy events
+- Pinata events
 
-### Flight
+Visual and audio delivery can be controlled independently.
 
-- `fly_cloud` - default Cloud effect
-- `fly_flame` - Flame effect
-- `fly_endrod` - End Rod effect
+## Teleport Presentation
 
-Default TELEPORT/FLY cosmetics remain usable without an explicit unlock. Alternate cosmetics can be granted and equipped normally.
+MiraCosmetics is the suite authority for teleport visuals/audio.
+
+Successful Bukkit/Paper teleports can render the canonical origin/destination effect. Warmup consumers can explicitly start a warmup package, and cancellation can terminate that package cleanly.
+
+The standard teleport package includes:
+
+- rising warmup visual/audio
+- completion effect at the real successful teleport
+- cancellation presentation when a queued teleport is cancelled
+
+Other Mira plugins should report teleport lifecycle state rather than drawing competing particles themselves.
+
+## Real Warmup Lifecycle Tracking — v0.1.13
+
+Teleport cosmetics now follow the **real teleport queue lifecycle** rather than approximating it.
+
+Supported integrations include:
+
+- EssentialsX warmups/cancellations
+- MiraWarps spawn queues
+- MiraFactions home/warp queues
+- MiraRTP searches
+
+The animation starts when the underlying queue/search starts and terminates when the teleport completes or is cancelled.
+
+This prevents cosmetic warmups from continuing after a real teleport has already failed/cancelled.
+
+## Flight Presentation
+
+MiraFly remains the authority for whether a player is flying. MiraCosmetics owns the visual trail and throttling.
+
+Consumers can call the public flight presentation API without needing to know which particle/effect the player has selected.
+
+## Audio Delivery
+
+MiraCosmetics supports different audiences depending on the event:
+
+- actioning player only
+- nearby opted-in players
+- faction audience where the event owner supplies one
+- server-wide opted-in listeners
+- visual-only presentation
+
+Global audio is played at each listener's location so cross-world/global events remain audible where intended.
+
+Configured Bukkit sound constants are resolved directly before registry-key fallback, avoiding underscore-to-dot conversion failures.
+
+## Crate Audio
+
+MiraCrates can use:
+
+- synchronized spin ticks
+- Common reward audio
+- Rare reward audio
+- Legendary/Mythic celebration audio
+
+The current crate spin default uses a clear UI click instead of the previous near-inaudible note-block hat configuration.
 
 ## Commands
 
-| Command | Permission | What it does |
+| Command | Permission | Purpose |
 | --- | --- | --- |
+| `/cosmetics` | `miracosmetics.use` | Opens the cosmetics GUI. |
 | `/cosmetics list` | `miracosmetics.use` | Lists registered cosmetics and ownership/default state. |
-| `/cosmetics equip <id>` | `miracosmetics.use` | Equips an unlocked/default cosmetic in its channel. |
-| `/cosmetics clear <trail|join|kill|teleport|fly>` | `miracosmetics.use` | Clears that slot and returns TELEPORT/FLY to their configured default where applicable. |
-| `/cosmetics status` | `miracosmetics.use` | Shows the effective cosmetic for every channel. |
-| `/cosmetics grant <player> <id>` | `miracosmetics.admin` | Grants a cosmetic unlock. |
-| `/cosmetics revoke <player> <id>` | `miracosmetics.admin` | Revokes an unlock and safely unequips it if selected. |
+| `/cosmetics equip <id>` | `miracosmetics.use` | Equips an unlocked/default cosmetic. |
+| `/cosmetics clear <channel>` | `miracosmetics.use` | Clears the equipped cosmetic for a channel. |
+| `/cosmetics status` | `miracosmetics.use` | Shows effective cosmetics/settings. |
+| `/cosmetics grant <player> <id>` | `miracosmetics.admin` | Grants an unlock. |
+| `/cosmetics revoke <player> <id>` | `miracosmetics.admin` | Revokes an unlock safely. |
 
 Alias: `/cosmetic`
 
 ## Permissions
 
-| Permission | Default | What it does |
+| Permission | Default | Purpose |
 | --- | --- | --- |
-| `miracosmetics.use` | Everyone | Allows cosmetic viewing, equipping, clearing and status. |
-| `miracosmetics.admin` | OP | Allows administrative grants/revokes. |
+| `miracosmetics.use` | Everyone | Player cosmetic GUI/settings/equipment. |
+| `miracosmetics.admin` | OP | Administrative grants/revokes. |
 
-## Configuration
+## API
 
-Important effect controls are in `config.yml`:
+`CosmeticsApi` is exposed through Bukkit ServicesManager/MiraCore and supports:
 
-- `effects.teleport.enabled`
-- `effects.teleport.default-cosmetic`
-- `effects.teleport.count-origin`
-- `effects.teleport.count-destination`
-- `effects.fly.enabled`
-- `effects.fly.default-cosmetic`
-- `effects.fly.throttle-millis`
-- `effects.fly.count`
-- `effects.trail.throttle-millis`
-
-Particle counts/throttles are centrally configurable so high-frequency effects can be performance-tuned without editing MiraFly/Homes/Warps/RTP.
-
-## API / Integration
-
-`CosmeticsApi` is registered through Bukkit ServicesManager and MiraCore. It supports:
-
-- cosmetic registration and lookup
+- cosmetic registration/lookup
 - ownership grant/revoke/query
 - channel equip/effective selection
-- `playTeleport(Player, origin, destination)`
-- `playFly(Player)`
+- teleport presentation
+- flight presentation
+- shared visual/audio event presentation
+- warmup lifecycle integration
 
-Other Mira plugins should call these services rather than implementing their own particle-selection logic.
+Other Mira plugins should use this API instead of maintaining separate particle/sound implementations.
 
 ## Persistence
 
-Player ownership and equipped selections are stored in `plugins/MiraCosmetics/cosmetics.yml`.
+Player ownership, equipment and toggle state are stored under:
+
+```text
+plugins/MiraCosmetics/
+```
 
 ## Building
 
@@ -113,87 +163,3 @@ gradle clean build
 ```
 
 The output JAR is created in `build/libs/`.
-
-
-## Canonical Teleport Effect
-
-Every successful Bukkit/Paper teleport handled by MiraCosmetics renders three horizontal rings around the player at both the origin and destination:
-
-1. blue
-2. white
-3. blue
-
-The rings use DUST particles and are configurable through ring point count, radius, vertical spacing and base Y offset. Other Mira plugins must not render their own teleport particles.
-
-## Canonical Flight Effect
-
-While MiraFly reports a player as actively flying, MiraCosmetics renders a white DUST particle trail directly under the player's feet.
-
-The trail throttle, particle count, Y offset and dust size are configurable in MiraCosmetics. MiraFly remains the sole authority for flight state; MiraCosmetics only renders the visual.
-
-
-## Player Effect Toggles
-
-Running `/cosmetics` with no arguments now opens the MiraCosmetics GUI.
-
-The GUI includes two persistent per-player controls:
-
-- **Visual Effects** - enables/disables Mira cosmetic particle rendering.
-- **Audio Effects** - enables/disables Mira cosmetic sounds.
-
-Both settings are stored in `cosmetics.yml` and survive restarts.
-
-## Teleport Package
-
-Teleport effects now include both warmup and completion phases.
-
-**Warmup**
-- blue/white rising spiral around the player
-- beacon-style warmup sound
-- triggered by consumers such as MiraWarps when their teleport warmup begins
-
-**Completion**
-- blue-white-blue horizontal rings at the origin and destination
-- teleport completion sound
-- only fires from the real successful Bukkit/Paper teleport event
-
-Visual and audio channels respect the player's GUI toggles independently.
-
-
-## MiraCosmetics Integration (0.1.4)
-
-Adds independent persistent Visual/Audio GUI toggles, a centralized viewer-specific visual event engine, approved Factions/Outposts/Crates/Pinata/Kits visual channels and audio configuration placeholders with no sounds selected yet.
-
-## MiraCosmetics Audio Integration (0.1.7)
-
-Adds the first active Mira audio-cosmetics pass with persistent `/cosmetics` Audio control, independent per-event audio settings, configurable sound/volume/pitch, teleport and crate pitch sequences, nearby opted-in teleport completion audio, cancellation-safe teleport warmup sequences, and shared event channels for combat/bounties, Outposts, Crates, Kits, Tags and economy systems.
-
-
-## Audio Audience & Config Hotfix (0.1.8)
-
-Existing installations now merge missing bundled audio-event defaults into `config.yml` without overwriting administrator edits. This fixes older MiraCosmetics configs where newly-added sound channels were absent and therefore silently treated as disabled.
-
-New presentation entry points separate visual-only, player-audio, nearby-audio and server-wide-audio delivery so event owners can choose the correct audience without duplicate effects.
-
-Bounty audio now includes separate `bounty_placed` and `bounty_received` events, and large bounty claims use the End Portal activation sound.
-
-Server-wide audio is played at each listener's own location so players hear global events reliably across different worlds.
-
-
-## Sound Resolver & Flight Trail Hotfix (0.1.9)
-
-MiraCosmetics now resolves Bukkit-style sound constants such as `BLOCK_NOTE_BLOCK_PLING`, `ENTITY_EXPERIENCE_ORB_PICKUP` and `ENTITY_ENDERMAN_TELEPORT` directly before falling back to explicit registry keys. This fixes the previous underscore-to-dot conversion bug that produced `Unknown configured sound` warnings and caused configured sounds to fail.
-
-The default flight effect is also substantially stronger: denser white dust, larger particle size, wider spread, faster refresh and a slight offset behind the flying player so it reads as a visible trail rather than sparse particles around the feet.
-
-
-## CS2-Style Crate Spin Audio (0.1.10)
-
-Adds `crate_spin_tick`, a short `BLOCK_NOTE_BLOCK_HAT` mechanical click at low volume and raised pitch. MiraCrates triggers it on every reel movement, so the sound stays locked to the visual case animation. Reward rarity sounds still play only when the reel lands.
-
-
-## Crate Spin Tick Hotfix (0.1.11)
-
-The original synchronized crate tick used `BLOCK_NOTE_BLOCK_HAT` at very low volume. It was technically valid, so it produced no console warning, but it was too subtle to hear reliably in normal gameplay.
-
-The default is now `UI_BUTTON_CLICK` at volume `0.65` and pitch `1.65`. Existing installations are migrated only when their crate spin sound is still exactly the untouched old default, so administrator-customized sound settings are preserved.
